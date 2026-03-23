@@ -40,13 +40,17 @@ test_that("hist_trimmed data excludes the 10 smallest and 10 largest", {
   expect_true(all(trimmed_data <= 90))
 })
 
-test_that("marginal_continuous warns on NA values", {
-  x <- c(1:50, NA, NA)
-  expect_warning(
-    out <- marginal_continuous(x),
-    "2 NA"
-  )
-  expect_s3_class(out$hist, "ggplot")
+test_that("NA count and percentage appear as subtitle on hist and hist_trimmed", {
+  x <- c(1:100, NA, NA, NA)
+  out <- marginal_continuous(x)
+  expect_match(out$hist$labels$subtitle, "Missing: 3")
+  expect_match(out$hist$labels$subtitle, "%")
+  expect_match(out$hist_trimmed$labels$subtitle, "Missing: 3")
+})
+
+test_that("subtitle shows 0 missing when no NAs", {
+  out <- marginal_continuous(1:100)
+  expect_match(out$hist$labels$subtitle, "Missing: 0")
 })
 
 test_that("marginal_continuous errors on non-numeric input", {

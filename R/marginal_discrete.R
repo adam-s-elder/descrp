@@ -12,7 +12,8 @@
 #' reaches or exceeds 5%.
 #'
 #' @param x A vector (character, factor, logical, etc.) of categorical values.
-#'   `NA` values are included as their own category.
+#'   `NA` values are always included as their own category, even when the count
+#'   is zero. The `NA` row is never collapsed into `"< 5%"`.
 #' @param var_name Character. Used as the header of the category column.
 #'   Defaults to the deparsed name of `x`.
 #'
@@ -46,27 +47,32 @@ marginal_discrete <- function(x, var_name = NULL) {
 
   total <- length(x)
 
-  # Build frequency table including NAs
-  tbl <- as.data.frame(table(x, useNA = "ifany"), stringsAsFactors = FALSE)
+  # Build frequency table — always include NA row
+  tbl <- as.data.frame(table(x, useNA = "always"), stringsAsFactors = FALSE)
   names(tbl) <- c("Category", "n")
   tbl$Category <- as.character(tbl$Category)
   tbl$Category[is.na(tbl$Category)] <- "NA"
   tbl$pct <- tbl$n / total
 
-  # Sort descending by count
-  tbl <- tbl[order(-tbl$n), ]
+  # Separate NA row; sort non-NA rows descending by count
+  na_row  <- tbl[tbl$Category == "NA", , drop = FALSE]
+  tbl_non_na <- tbl[tbl$Category != "NA", , drop = FALSE]
+  tbl_non_na <- tbl_non_na[order(-tbl_non_na$n), ]
+
+  # Reassemble with NA row always at the bottom
+  tbl <- rbind(tbl_non_na, na_row)
 
   md_table <- .format_freq_table(tbl, var_name)
 
-  n_cats <- nrow(tbl)
+  # Collapse logic only considers non-NA categories; trigger when > 10 non-NA cats
+  n_cats <- nrow(tbl_non_na)
 
   if (n_cats <= 10) {
     return(list(table = md_table, table_collapsed = NULL))
   }
 
-  # --- Collapse algorithm ---
-  # Sort ascending to identify smallest categories
-  tbl_asc <- tbl[order(tbl$pct), ]
+  # --- Collapse algorithm (non-NA categories only) ---
+  tbl_asc <- tbl_non_na[order(tbl_non_na$pct), ]
 
   # Find maximum K: consecutive categories from smallest that are each < 5%
   k <- 0L
@@ -92,9 +98,9 @@ marginal_discrete <- function(x, var_name = NULL) {
     stringsAsFactors = FALSE
   )
 
-  # Remaining categories sorted descending, collapsed row at bottom
+  # Remaining non-NA categories descending, then collapsed row, then NA row
   large <- large[order(-large$n), ]
-  tbl_collapsed <- rbind(large, collapsed_row)
+  tbl_collapsed <- rbind(large, collapsed_row, na_row)
 
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 

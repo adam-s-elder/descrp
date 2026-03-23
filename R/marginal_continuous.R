@@ -11,11 +11,13 @@
 #' @return A named list with two elements:
 #' \describe{
 #'   \item{`hist`}{A [ggplot2::ggplot()] object: simple histogram of all
-#'     (non-missing) observations.}
+#'     non-missing observations. The subtitle reports the count and percentage
+#'     of missing values.}
 #'   \item{`hist_trimmed`}{A [ggplot2::ggplot()] object: histogram with the 10
 #'     smallest and 10 largest observations removed. The plot caption lists
-#'     those removed values rounded to 2 significant figures. `NULL` when
-#'     `x` has 20 or fewer non-missing values.}
+#'     those removed values rounded to 2 significant figures; the subtitle
+#'     reports missing values. `NULL` when `x` has 20 or fewer non-missing
+#'     values.}
 #' }
 #'
 #' @examples
@@ -33,17 +35,19 @@ marginal_continuous <- function(x, var_name = NULL) {
     stop("`x` must be a numeric vector.")
   }
 
-  n_na <- sum(is.na(x))
-  if (n_na > 0) {
-    warning(sprintf("Removed %d NA value(s) from `x`.", n_na))
-    x <- x[!is.na(x)]
-  }
+  n_total <- length(x)
+  n_na    <- sum(is.na(x))
+  na_subtitle <- sprintf("Missing: %s (%s%%)",
+                         scales::comma(n_na),
+                         round(n_na / n_total * 100, 1))
+
+  x <- x[!is.na(x)]
 
   df <- data.frame(x = x)
 
   hist_plot <- ggplot2::ggplot(df, ggplot2::aes(x = x)) +
     ggplot2::geom_histogram() +
-    ggplot2::labs(x = var_name, y = "Count")
+    ggplot2::labs(x = var_name, y = "Count", subtitle = na_subtitle)
 
   if (length(x) <= 20) {
     message("`hist_trimmed` requires more than 20 non-missing observations; returning NULL.")
@@ -65,7 +69,7 @@ marginal_continuous <- function(x, var_name = NULL) {
 
     hist_trimmed <- ggplot2::ggplot(data.frame(x = x_trimmed), ggplot2::aes(x = x)) +
       ggplot2::geom_histogram() +
-      ggplot2::labs(x = var_name, y = "Count", caption = caption_text)
+      ggplot2::labs(x = var_name, y = "Count", subtitle = na_subtitle, caption = caption_text)
   }
 
   list(hist = hist_plot, hist_trimmed = hist_trimmed)

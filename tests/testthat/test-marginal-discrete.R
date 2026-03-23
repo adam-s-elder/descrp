@@ -11,7 +11,9 @@ test_that("table_collapsed is NULL when <= 10 categories", {
   expect_null(out$table_collapsed)
 })
 
-test_that("table_collapsed is NULL when <= 10 categories (exactly 10)", {
+test_that("table_collapsed is NULL when <= 10 non-NA categories (exactly 10)", {
+  # 10 non-NA categories + always-present NA row = 11 table rows, but
+  # collapse threshold is based on non-NA category count only
   x <- sample(letters[1:10], 200, replace = TRUE)
   out <- marginal_discrete(x)
   expect_null(out$table_collapsed)
@@ -54,11 +56,29 @@ test_that("counts are comma-formatted for large numbers", {
   expect_match(tbl_text, "12,345")
 })
 
-test_that("NA values are treated as their own category", {
+test_that("NA row is always present, even with zero missing values", {
+  x <- c("a", "b", "c")
+  out <- marginal_discrete(x)
+  tbl_text <- paste(out$table, collapse = "\n")
+  expect_match(tbl_text, "NA")
+})
+
+test_that("NA row shows correct count when NAs are present", {
   x <- c("a", "b", NA, NA, NA)
   out <- marginal_discrete(x)
   tbl_text <- paste(out$table, collapse = "\n")
   expect_match(tbl_text, "NA")
+  expect_match(tbl_text, "60%")  # 3/5 = 60%
+})
+
+test_that("NA row is never collapsed into '< 5%'", {
+  # Build > 10 categories with NAs that individually are < 5%
+  set.seed(1)
+  x <- c(sample(letters, 500, replace = TRUE), rep(NA, 5))
+  out <- marginal_discrete(x)
+  tbl_text <- paste(out$table_collapsed, collapse = "\n")
+  # NA row should still appear explicitly, not be swallowed by "< 5%"
+  expect_match(tbl_text, "\\| NA ")
 })
 
 test_that("var_name is used as the category column header", {
