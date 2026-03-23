@@ -4,12 +4,12 @@
 #' variable: a simple histogram of all observations, and a trimmed histogram
 #' that excludes the 10 smallest and 10 largest observations.
 #'
-#' @param x A numeric vector, or a character vector that can be coerced to
-#'   numeric or parsed as dates (via lubridate).
-#' @param var_name Character. Label used for the x-axis. Defaults to the
-#'   deparsed name of `x`.
+#' @param data A data frame.
+#' @param var_name Character. Name of the column in `data` to summarise. Used
+#'   as the x-axis label. The column may be numeric, or a character vector
+#'   parseable as numbers or dates (via lubridate).
 #'
-#' @return A named list with two elements:
+#' @return A named list with the following elements:
 #' \describe{
 #'   \item{`hist`}{A [ggplot2::ggplot()] object: simple histogram of all
 #'     non-missing observations. The caption reports the count and percentage
@@ -17,19 +17,27 @@
 #'   \item{`hist_trimmed`}{A [ggplot2::ggplot()] object: histogram with the 10
 #'     smallest and 10 largest observations removed. The plot caption lists
 #'     those removed values rounded to 2 significant figures and reports
-#'     missing values. `NULL` when `x` has 20 or fewer non-missing values.}
+#'     missing values. `NULL` when the column has 20 or fewer non-missing
+#'     values.}
+#'   \item{`hist_log`}{A [ggplot2::ggplot()] object: histogram on a log10
+#'     x-axis, using only positive values. The caption notes any excluded
+#'     non-positive values. `NULL` for date columns or when no positive values
+#'     exist.}
+#'   \item{`.var_name`}{Character. The variable name used for file naming in
+#'     [save_summaries()].}
+#'   \item{`.summary_type`}{Character `"continuous_marginal"`. Used by
+#'     [save_summaries()] to dispatch saving logic.}
 #' }
 #'
 #' @examples
-#' out <- marginal_continuous(rnorm(200), var_name = "Score")
+#' df <- data.frame(score = rnorm(200))
+#' out <- marginal_continuous(df, "score")
 #' out$hist
 #' out$hist_trimmed
 #'
 #' @export
-marginal_continuous <- function(x, var_name = NULL) {
-  if (is.null(var_name)) {
-    var_name <- deparse(substitute(x))
-  }
+marginal_continuous <- function(data, var_name) {
+  x <- data[[var_name]]
 
   is_date <- FALSE
 
@@ -122,5 +130,36 @@ marginal_continuous <- function(x, var_name = NULL) {
     }
   }
 
-  list(hist = hist_plot, hist_trimmed = hist_trimmed)
+  # Log-transformed histogram (non-date only)
+  if (is_date) {
+    hist_log <- NULL
+  } else {
+    x_pos   <- x[x > 0]
+    n_nonpos <- length(x) - length(x_pos)
+
+    if (length(x_pos) == 0) {
+      message("`hist_log` requires at least one positive value; returning NULL.")
+      hist_log <- NULL
+    } else {
+      log_caption <- na_text
+      if (n_nonpos > 0) {
+        log_caption <- paste0(
+          "Excluded ", scales::comma(n_nonpos), " non-positive value(s) from log scale.\n",
+          na_text
+        )
+      }
+      hist_log <- ggplot2::ggplot(data.frame(x = x_pos), ggplot2::aes(x = x)) +
+        ggplot2::geom_histogram() +
+        ggplot2::scale_x_log10(labels = scales::comma) +
+        ggplot2::labs(x = var_name, y = "Count", caption = log_caption)
+    }
+  }
+
+  list(
+    hist          = hist_plot,
+    hist_trimmed  = hist_trimmed,
+    hist_log      = hist_log,
+    .var_name     = var_name,
+    .summary_type = "continuous_marginal"
+  )
 }

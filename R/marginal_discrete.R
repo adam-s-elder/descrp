@@ -11,13 +11,13 @@
 #' ascending order of frequency; collapsing stops as soon as a category
 #' reaches or exceeds 5%.
 #'
-#' @param x A vector (character, factor, logical, etc.) of categorical values.
-#'   `NA` values are always included as their own category, even when the count
-#'   is zero. The `NA` row is never collapsed into `"< 5%"`.
-#' @param var_name Character. Used as the header of the category column.
-#'   Defaults to the deparsed name of `x`.
+#' @param data A data frame.
+#' @param var_name Character. Name of the column in `data` to summarise. Used
+#'   as the header of the category column. The column may be any type
+#'   (character, factor, logical, etc.). `NA` values are always included as
+#'   their own category. The `NA` row is never collapsed into `"< 5%"`.
 #'
-#' @return A named list with two elements:
+#' @return A named list with the following elements:
 #' \describe{
 #'   \item{`table`}{A `knitr_kable` markdown table with columns
 #'     `Category`, `n` (comma-formatted), and `%` (1 decimal place).
@@ -26,24 +26,28 @@
 #'     format, with small categories collapsed into `"< 5%"`. `NULL` when
 #'     there are 10 or fewer categories, or when no category individually
 #'     falls below 5%.}
+#'   \item{`.var_name`}{Character. The variable name used for file naming in
+#'     [save_summaries()].}
+#'   \item{`.summary_type`}{Character `"discrete_marginal"`. Used by
+#'     [save_summaries()] to dispatch saving logic.}
 #' }
 #'
 #' @examples
 #' # Few categories — no collapsed table
-#' out <- marginal_discrete(sample(letters[1:5], 100, replace = TRUE))
+#' df <- data.frame(letter = sample(letters[1:5], 100, replace = TRUE))
+#' out <- marginal_discrete(df, "letter")
 #' out$table
 #' out$table_collapsed  # NULL
 #'
 #' # Many categories — collapsed table produced
-#' out2 <- marginal_discrete(sample(letters, 500, replace = TRUE))
+#' df2 <- data.frame(letter = sample(letters, 500, replace = TRUE))
+#' out2 <- marginal_discrete(df2, "letter")
 #' out2$table
 #' out2$table_collapsed
 #'
 #' @export
-marginal_discrete <- function(x, var_name = NULL) {
-  if (is.null(var_name)) {
-    var_name <- deparse(substitute(x))
-  }
+marginal_discrete <- function(data, var_name) {
+  x <- data[[var_name]]
 
   total <- length(x)
 
@@ -68,7 +72,12 @@ marginal_discrete <- function(x, var_name = NULL) {
   n_cats <- nrow(tbl_non_na)
 
   if (n_cats <= 10) {
-    return(list(table = md_table, table_collapsed = NULL))
+    return(list(
+      table          = md_table,
+      table_collapsed = NULL,
+      .var_name      = var_name,
+      .summary_type  = "discrete_marginal"
+    ))
   }
 
   # --- Collapse algorithm (non-NA categories only) ---
@@ -85,7 +94,12 @@ marginal_discrete <- function(x, var_name = NULL) {
   }
 
   if (k == 0L) {
-    return(list(table = md_table, table_collapsed = NULL))
+    return(list(
+      table          = md_table,
+      table_collapsed = NULL,
+      .var_name      = var_name,
+      .summary_type  = "discrete_marginal"
+    ))
   }
 
   small <- tbl_asc[seq_len(k), ]
@@ -104,7 +118,12 @@ marginal_discrete <- function(x, var_name = NULL) {
 
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 
-  list(table = md_table, table_collapsed = md_table_collapsed)
+  list(
+    table          = md_table,
+    table_collapsed = md_table_collapsed,
+    .var_name      = var_name,
+    .summary_type  = "discrete_marginal"
+  )
 }
 
 # Internal helper: format a frequency data frame as a markdown kable.
