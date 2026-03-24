@@ -92,6 +92,10 @@ save_summaries <- function(summaries, output_dir = ".", width = 8, height = 6, d
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
 
+    } else if (type == "spatial_summary") {
+      plots <- list(map = s$map)
+      saved <- c(saved, .save_plots(plots, stem, output_dir, width, height, dpi))
+
     } else {
       warning(sprintf("Unknown `.summary_type` '%s'; skipping.", type))
     }
