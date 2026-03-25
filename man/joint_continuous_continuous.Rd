@@ -4,7 +4,14 @@
 \alias{joint_continuous_continuous}
 \title{Joint distribution plots for two continuous variables}
 \usage{
-joint_continuous_continuous(data, var1, var2)
+joint_continuous_continuous(
+  data,
+  var1,
+  var2,
+  trim = c("trim_count", "trim_percentile"),
+  trim_n = 5L,
+  trim_pct = 0.01
+)
 }
 \arguments{
 \item{data}{A data frame.}
@@ -12,18 +19,40 @@ joint_continuous_continuous(data, var1, var2)
 \item{var1}{Character. Name of the first continuous column (x-axis).}
 
 \item{var2}{Character. Name of the second continuous column (y-axis).}
+
+\item{trim}{Character. Trimming method for \code{scatter_trimmed}. One of
+\code{"trim_count"} (remove the \code{trim_n} smallest and \code{trim_n} largest
+observations of each variable) or \code{"trim_percentile"} (remove
+observations below the \code{trim_pct} quantile or above the \code{1 - trim_pct}
+quantile for either variable).}
+
+\item{trim_n}{Integer. Number of observations to remove from each tail of
+each variable when \code{trim = "trim_count"}. Default \code{5}.}
+
+\item{trim_pct}{Numeric in (0, 0.5). Tail fraction to remove when
+\code{trim = "trim_percentile"}. Default \code{0.01} (1\%).}
 }
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{scatter}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} scatter plot of all complete
-observations with a linear line of best fit. Caption reports rows
-excluded due to missingness in either variable.}
-\item{\code{scatter_trimmed}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} scatter plot with the 5
-smallest and 5 largest observations of each variable removed. The
-caption lists the removed values (2 significant figures) for both
-variables. \code{NULL} when fewer than 21 complete observations are
-available.}
+\item{\code{outputs}}{A named list of \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} objects:
+\itemize{
+\item \code{scatter} — scatter plot of all complete observations with a
+linear line of best fit. Caption reports rows excluded due to
+missingness.
+\item \code{scatter_trimmed} — scatter plot after tail trimming of each
+variable. \code{NULL} when fewer than \code{2 * trim_n + 1} complete
+observations exist (for \code{trim_count}).
+}
+}
+\item{\code{exclusions}}{A named list mirroring \code{outputs}:
+\itemize{
+\item \code{scatter} — \code{NULL}.
+\item \code{scatter_trimmed} — data frame of excluded rows (columns
+named after \code{var1} and \code{var2}), or \code{NULL} when
+\code{scatter_trimmed} is \code{NULL}.
+}
+}
 \item{\code{.var_name}}{Combined variable name used for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{Character \code{"continuous_continuous_joint"}.}
@@ -32,13 +61,13 @@ available.}
 \description{
 Produces two scatter plots exploring the relationship between two continuous
 variables: a full scatter of all complete observations and a trimmed scatter
-that removes the 5 smallest and 5 largest observations of each variable.
+that removes extreme values from each variable.
 Both plots include a linear line of best fit via \code{\link[ggplot2:geom_smooth]{ggplot2::geom_smooth()}}.
 }
 \examples{
 df <- data.frame(x = rnorm(200), y = rnorm(200))
 out <- joint_continuous_continuous(df, "x", "y")
-out$scatter
-out$scatter_trimmed
+out$outputs$scatter
+out$outputs$scatter_trimmed
 
 }

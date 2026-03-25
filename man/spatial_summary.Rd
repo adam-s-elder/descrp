@@ -2,7 +2,8 @@
 % Please edit documentation in R/spatial_summary.R
 \name{spatial_summary}
 \alias{spatial_summary}
-\title{Choropleth map of observations or a continuous variable across spatial units}
+\title{Choropleth map and scatter of observations or a continuous variable across
+spatial units}
 \usage{
 spatial_summary(
   data,
@@ -31,7 +32,16 @@ Ignored when \code{summary_var} is \code{NULL}.}
 \value{
 A named list with:
 \describe{
-\item{\code{map}}{A ggplot2 choropleth map.}
+\item{\code{outputs}}{A named list:
+\itemize{
+\item \code{map} — ggplot2 choropleth. For county maps, each county is
+labelled with its value (3 significant figures).
+\item \code{scatter} — ggplot2 scatter of value (y) vs land area (x,
+log10 scale), labelled by county name or ZIP code, filtered to
+Washington state only.
+}
+}
+\item{\code{exclusions}}{Named list with \code{map = NULL} and \code{scatter = NULL}.}
 \item{\code{.var_name}}{Character string used for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{\code{"spatial_summary"}.}
@@ -39,9 +49,10 @@ A named list with:
 }
 \description{
 Aggregates a dataset by a spatial covariate (US county FIPS codes or ZIP
-codes) and returns a ggplot2 choropleth map. When \code{summary_var} is \code{NULL}
-the map shows the count of observations per area. Otherwise it shows the
-chosen summary statistic of \code{summary_var} within each area.
+codes) and returns a ggplot2 choropleth map plus a scatter plot of the value
+against area size. Only areas present in the summary dataset appear in the
+map (left-join from data). The scatter plot is restricted to Washington
+state. For county-level maps, each county is labelled with its value.
 }
 \details{
 Shapefiles are fetched via the \pkg{tigris} package (cached after the first
@@ -55,12 +66,13 @@ df <- data.frame(
 )
 # Count map
 out1 <- spatial_summary(df, "fips", spatial_type = "county")
-out1$map
+out1$outputs$map
 
 # Mean income map
 out2 <- spatial_summary(df, "fips", summary_var = "income",
                         spatial_type = "county", metric = "mean")
-out2$map
+out2$outputs$map
+out2$outputs$scatter
 }
 
 }

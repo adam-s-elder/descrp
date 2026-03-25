@@ -4,45 +4,67 @@
 \alias{marginal_continuous}
 \title{Marginal distribution plots for a continuous variable}
 \usage{
-marginal_continuous(data, var_name)
+marginal_continuous(
+  data,
+  var_name,
+  trim = c("trim_count", "trim_percentile"),
+  trim_n = 10L,
+  trim_pct = 0.01
+)
 }
 \arguments{
 \item{data}{A data frame.}
 
-\item{var_name}{Character. Name of the column in \code{data} to summarise. Used
-as the x-axis label. The column may be numeric, or a character vector
-parseable as numbers or dates (via lubridate).}
+\item{var_name}{Character. Name of the column in \code{data} to summarise. The
+column may be numeric, or a character vector parseable as numbers or dates
+(via lubridate).}
+
+\item{trim}{Character. Trimming method for \code{hist_trimmed}. One of
+\code{"trim_count"} (remove the \code{trim_n} smallest and \code{trim_n} largest
+observations) or \code{"trim_percentile"} (remove observations below the
+\code{trim_pct} quantile and above the \code{1 - trim_pct} quantile).}
+
+\item{trim_n}{Integer. Number of observations to remove from each tail when
+\code{trim = "trim_count"}. Default \code{10}.}
+
+\item{trim_pct}{Numeric in (0, 0.5). Tail fraction to remove when
+\code{trim = "trim_percentile"}. Default \code{0.01} (1\%).}
 }
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{hist}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} object: simple histogram of all
-non-missing observations. The caption reports the count and percentage
-of missing values.}
-\item{\code{hist_trimmed}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} object: histogram with the 10
-smallest and 10 largest observations removed. The plot caption lists
-those removed values rounded to 2 significant figures and reports
-missing values. \code{NULL} when the column has 20 or fewer non-missing
-values.}
-\item{\code{hist_log}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} object: histogram on a log10
-x-axis, using only positive values. The caption notes any excluded
-non-positive values. \code{NULL} for date columns or when no positive values
-exist.}
+\item{\code{outputs}}{A named list of \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} objects:
+\itemize{
+\item \code{hist} — histogram of all non-missing observations.
+\item \code{hist_trimmed} — histogram after tail trimming. \code{NULL} when
+fewer than \code{2 * trim_n + 1} non-missing observations exist (for
+\code{trim_count}) or when trimming would remove all observations.
+\item \code{hist_log} — histogram on a log10 x-axis using only positive
+values. \code{NULL} for date columns or when no positive values exist.
+}
+}
+\item{\code{exclusions}}{A named list mirroring \code{outputs}:
+\itemize{
+\item \code{hist} — \code{NULL} (no observations excluded).
+\item \code{hist_trimmed} — numeric vector of excluded values, or \code{NULL}
+when \code{hist_trimmed} is \code{NULL}.
+\item \code{hist_log} — \code{NULL}.
+}
+}
 \item{\code{.var_name}}{Character. The variable name used for file naming in
 \code{\link[=save_summaries]{save_summaries()}}.}
-\item{\code{.summary_type}}{Character \code{"continuous_marginal"}. Used by
-\code{\link[=save_summaries]{save_summaries()}} to dispatch saving logic.}
+\item{\code{.summary_type}}{Character \code{"continuous_marginal"}.}
 }
 }
 \description{
-Produces two histogram variants for exploratory analysis of a continuous
-variable: a simple histogram of all observations, and a trimmed histogram
-that excludes the 10 smallest and 10 largest observations.
+Produces histogram variants for exploratory analysis of a continuous
+variable: a simple histogram of all observations, a trimmed histogram,
+and a log10 histogram.
 }
 \examples{
 df <- data.frame(score = rnorm(200))
 out <- marginal_continuous(df, "score")
-out$hist
-out$hist_trimmed
+out$outputs$hist
+out$outputs$hist_trimmed
 
 }

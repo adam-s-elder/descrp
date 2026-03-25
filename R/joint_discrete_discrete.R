@@ -11,11 +11,16 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`crosstab`}{A `knitr_kable` markdown table with `var1` levels as
-#'     rows, `var2` levels as columns, and a Total row and column. Each cell
-#'     shows `count (row%)`.}
-#'   \item{`crosstab_transposed`}{The same table with `var2` as rows and `var1`
-#'     as columns.}
+#'   \item{`outputs`}{A named list of `knitr_kable` markdown tables:
+#'     \itemize{
+#'       \item `crosstab` — `var1` levels as rows, `var2` levels as columns,
+#'         with a Total row and column. Each cell shows `count (row%)`.
+#'       \item `crosstab_transposed` — the same table with `var2` as rows and
+#'         `var1` as columns.
+#'     }
+#'   }
+#'   \item{`exclusions`}{Named list with `crosstab = NULL` and
+#'     `crosstab_transposed = NULL` (no observations are excluded).}
 #'   \item{`.var_name`}{Combined variable name for file naming by
 #'     [save_summaries()].}
 #'   \item{`.summary_type`}{Character `"discrete_discrete_joint"`.}
@@ -27,8 +32,8 @@
 #'   status = sample(c("Active", "Inactive", "Unknown"), 200, replace = TRUE)
 #' )
 #' out <- joint_discrete_discrete(df, "sex", "status")
-#' out$crosstab
-#' out$crosstab_transposed
+#' out$outputs$crosstab
+#' out$outputs$crosstab_transposed
 #'
 #' @export
 joint_discrete_discrete <- function(data, var1, var2) {
@@ -39,10 +44,16 @@ joint_discrete_discrete <- function(data, var1, var2) {
   x2[is.na(x2)] <- "NA"
 
   list(
-    crosstab            = .make_crosstab(x1, x2, var1, var2),
-    crosstab_transposed = .make_crosstab(x2, x1, var2, var1),
-    .var_name           = paste(var1, var2, sep = "_"),
-    .summary_type       = "discrete_discrete_joint"
+    outputs = list(
+      crosstab            = .make_crosstab(x1, x2, var1, var2),
+      crosstab_transposed = .make_crosstab(x2, x1, var2, var1)
+    ),
+    exclusions = list(
+      crosstab            = NULL,
+      crosstab_transposed = NULL
+    ),
+    .var_name     = paste(var1, var2, sep = "_"),
+    .summary_type = "discrete_discrete_joint"
   )
 }
 

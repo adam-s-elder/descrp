@@ -1,9 +1,12 @@
 #' Save all summary objects produced by descrp functions
 #'
-#' Writes every non-`NULL` plot or table in one or more summary lists (as
-#' returned by any descrp summary function) to files in `output_dir`. File
-#' names encode both the variable name(s) and the kind of summary, e.g.
-#' `time_of_death_marginal_hist.png` or `sex_table_collapsed.md`.
+#' Writes every non-`NULL` plot or table from the `outputs` element of one or
+#' more summary lists (as returned by any descrp summary function) to files in
+#' `output_dir`. File names encode both the variable name(s) and the kind of
+#' summary, e.g. `score_marginal_hist.png` or `group_table_collapsed.md`.
+#'
+#' ggplot2 objects are saved as PNG; `knitr_kable` tables are saved as `.md`.
+#' `NULL` outputs are silently skipped.
 #'
 #' @param summaries A single summary list returned by a descrp function, **or**
 #'   a plain list whose elements are such summary lists.
@@ -36,20 +39,31 @@
 #' }
 #'
 #' @export
-save_summaries <- function(summaries, output_dir = ".", width = 8, height = 6, dpi = 150) {
+save_summaries <- function(
+  summaries,
+  output_dir = ".",
+  width = 8,
+  height = 6,
+  dpi = 150
+) {
   # Accept a single summary object as well as a list of them
   if (!is.null(summaries$.summary_type)) {
     summaries <- list(summaries)
   }
 
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+  output_dir <- normalizePath(output_dir)
 
   saved <- character(0)
 
   for (s in summaries) {
     type <- s$.summary_type
     if (is.null(type)) {
-      warning("Skipping a list element with no `.summary_type`; was it produced by a descrp function?")
+      warning(
+        "Skipping a list element with no `.summary_type`; was it produced by a descrp function?"
+      )
       next
     }
 
@@ -57,50 +71,61 @@ save_summaries <- function(summaries, output_dir = ".", width = 8, height = 6, d
 
     if (type == "continuous_marginal") {
       plots <- list(
-        marginal_hist         = s$hist,
-        marginal_hist_trimmed = s$hist_trimmed,
-        marginal_hist_log     = s$hist_log
+        marginal_hist         = s$outputs$hist,
+        marginal_hist_trimmed = s$outputs$hist_trimmed,
+        marginal_hist_log     = s$outputs$hist_log
       )
-      saved <- c(saved, .save_plots(plots, stem, output_dir, width, height, dpi))
-
+      saved <- c(
+        saved,
+        .save_plots(plots, stem, output_dir, width, height, dpi)
+      )
     } else if (type == "discrete_marginal") {
       tables <- list(
-        table           = s$table,
-        table_collapsed = s$table_collapsed
+        table           = s$outputs$table,
+        table_collapsed = s$outputs$table_collapsed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
-
     } else if (type == "continuous_continuous_joint") {
       plots <- list(
-        scatter         = s$scatter,
-        scatter_trimmed = s$scatter_trimmed
+        scatter         = s$outputs$scatter,
+        scatter_trimmed = s$outputs$scatter_trimmed
       )
-      saved <- c(saved, .save_plots(plots, stem, output_dir, width, height, dpi))
-
+      saved <- c(
+        saved,
+        .save_plots(plots, stem, output_dir, width, height, dpi)
+      )
     } else if (type == "continuous_discrete_joint") {
       # Use embedded recommended height when it exceeds the caller's default
       h <- max(height, s$.plot_height %||% height)
-      plots <- list(hist_faceted = s$hist_faceted)
+      plots <- list(hist_faceted = s$outputs$hist_faceted)
       saved <- c(saved, .save_plots(plots, stem, output_dir, width, h, dpi))
-      tables <- list(summary_table = s$summary_table)
+      tables <- list(summary_table = s$outputs$summary_table)
       saved <- c(saved, .save_tables(tables, stem, output_dir))
-
     } else if (type == "discrete_discrete_joint") {
       tables <- list(
-        crosstab            = s$crosstab,
-        crosstab_transposed = s$crosstab_transposed
+        crosstab            = s$outputs$crosstab,
+        crosstab_transposed = s$outputs$crosstab_transposed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
-
     } else if (type == "spatial_summary") {
-      plots <- list(map = s$map)
-      saved <- c(saved, .save_plots(plots, stem, output_dir, width, height, dpi))
-
+      plots <- list(
+        map     = s$outputs$map,
+        scatter = s$outputs$scatter
+      )
+      saved <- c(
+        saved,
+        .save_plots(plots, stem, output_dir, width, height, dpi)
+      )
     } else {
       warning(sprintf("Unknown `.summary_type` '%s'; skipping.", type))
     }
   }
 
+  if (length(saved) > 0) {
+    message(sprintf("Saved %d file(s) to: %s", length(saved), output_dir))
+  } else {
+    message("No files were saved.")
+  }
   invisible(saved)
 }
 
@@ -120,7 +145,9 @@ save_summaries <- function(summaries, output_dir = ".", width = 8, height = 6, d
   saved <- character(0)
   for (key in names(plots)) {
     obj <- plots[[key]]
-    if (is.null(obj)) next
+    if (is.null(obj)) {
+      next
+    }
     path <- file.path(output_dir, paste0(stem, "_", key, ".png"))
     ggplot2::ggsave(path, obj, width = width, height = height, dpi = dpi)
     saved <- c(saved, path)
@@ -133,7 +160,9 @@ save_summaries <- function(summaries, output_dir = ".", width = 8, height = 6, d
   saved <- character(0)
   for (key in names(tables)) {
     obj <- tables[[key]]
-    if (is.null(obj)) next
+    if (is.null(obj)) {
+      next
+    }
     path <- file.path(output_dir, paste0(stem, "_", key, ".md"))
     writeLines(as.character(obj), path)
     saved <- c(saved, path)

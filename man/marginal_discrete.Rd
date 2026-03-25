@@ -17,13 +17,18 @@ their own category. The \code{NA} row is never collapsed into \code{"< 5\%"}.}
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{table}}{A \code{knitr_kable} markdown table with columns
-\code{Category}, \code{n} (comma-formatted), and \verb{\%} (1 decimal place).
-Rows are sorted descending by count.}
-\item{\code{table_collapsed}}{A \code{knitr_kable} markdown table in the same
-format, with small categories collapsed into \code{"< 5\%"}. \code{NULL} when
-there are 10 or fewer categories, or when no category individually
-falls below 5\%.}
+\item{\code{outputs}}{A named list of \code{knitr_kable} markdown tables:
+\itemize{
+\item \code{table} — frequency table with columns \code{Category},
+\code{n} (comma-formatted), and \verb{\%} (1 decimal place). Rows sorted
+descending by count; \code{NA} row always last.
+\item \code{table_collapsed} — same format with small categories collapsed
+into \code{"< 5\%"}. \code{NULL} when there are 10 or fewer non-NA categories,
+or when no category individually falls below 5\%.
+}
+}
+\item{\code{exclusions}}{Named list with \code{table = NULL} and
+\code{table_collapsed = NULL} (no observations are excluded).}
 \item{\code{.var_name}}{Character. The variable name used for file naming in
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{Character \code{"discrete_marginal"}. Used by
@@ -47,13 +52,13 @@ reaches or exceeds 5\%.
 # Few categories — no collapsed table
 df <- data.frame(letter = sample(letters[1:5], 100, replace = TRUE))
 out <- marginal_discrete(df, "letter")
-out$table
-out$table_collapsed  # NULL
+out$outputs$table
+out$outputs$table_collapsed  # NULL
 
 # Many categories — collapsed table produced
 df2 <- data.frame(letter = sample(letters, 500, replace = TRUE))
 out2 <- marginal_discrete(df2, "letter")
-out2$table
-out2$table_collapsed
+out2$outputs$table
+out2$outputs$table_collapsed
 
 }

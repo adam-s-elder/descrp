@@ -16,12 +16,18 @@ joint_continuous_discrete(data, cont_var, disc_var)
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{hist_faceted}}{A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} faceted histogram, one panel
-per level of \code{disc_var}. \code{NULL} when \code{disc_var} has more than 10
-levels.}
-\item{\code{summary_table}}{A \code{knitr_kable} markdown table with columns for
-level, n, \%, mean, median, and SD of \code{cont_var}. Rows are sorted
-descending by count with the \code{NA} level last.}
+\item{\code{outputs}}{A named list:
+\itemize{
+\item \code{hist_faceted} — \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} faceted histogram, one
+panel per level of \code{disc_var}. \code{NULL} when \code{disc_var} has more than
+10 levels.
+\item \code{summary_table} — \code{knitr_kable} markdown table with columns for
+level, n, \%, mean, median, and SD of \code{cont_var}. Sorted descending
+by count with the \code{NA} level last.
+}
+}
+\item{\code{exclusions}}{Named list with \code{hist_faceted = NULL} and
+\code{summary_table = NULL} (no observations are excluded).}
 \item{\code{.var_name}}{Combined variable name for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{Character \code{"continuous_discrete_joint"}.}
@@ -51,7 +57,7 @@ df <- data.frame(
   group = sample(c("A", "B", "C"), 300, replace = TRUE)
 )
 out <- joint_continuous_discrete(df, "score", "group")
-out$hist_faceted
-out$summary_table
+out$outputs$hist_faceted
+out$outputs$summary_table
 
 }

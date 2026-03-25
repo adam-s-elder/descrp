@@ -16,11 +16,16 @@ joint_discrete_discrete(data, var1, var2)
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{crosstab}}{A \code{knitr_kable} markdown table with \code{var1} levels as
-rows, \code{var2} levels as columns, and a Total row and column. Each cell
-shows \verb{count (row\%)}.}
-\item{\code{crosstab_transposed}}{The same table with \code{var2} as rows and \code{var1}
-as columns.}
+\item{\code{outputs}}{A named list of \code{knitr_kable} markdown tables:
+\itemize{
+\item \code{crosstab} — \code{var1} levels as rows, \code{var2} levels as columns,
+with a Total row and column. Each cell shows \verb{count (row\%)}.
+\item \code{crosstab_transposed} — the same table with \code{var2} as rows and
+\code{var1} as columns.
+}
+}
+\item{\code{exclusions}}{Named list with \code{crosstab = NULL} and
+\code{crosstab_transposed = NULL} (no observations are excluded).}
 \item{\code{.var_name}}{Combined variable name for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{Character \code{"discrete_discrete_joint"}.}
@@ -38,7 +43,7 @@ df <- data.frame(
   status = sample(c("Active", "Inactive", "Unknown"), 200, replace = TRUE)
 )
 out <- joint_discrete_discrete(df, "sex", "status")
-out$crosstab
-out$crosstab_transposed
+out$outputs$crosstab
+out$outputs$crosstab_transposed
 
 }

@@ -25,10 +25,14 @@ a plain list whose elements are such summary lists.}
 Invisibly returns a character vector of the file paths written.
 }
 \description{
-Writes every non-\code{NULL} plot or table in one or more summary lists (as
-returned by any descrp summary function) to files in \code{output_dir}. File
-names encode both the variable name(s) and the kind of summary, e.g.
-\code{time_of_death_marginal_hist.png} or \code{sex_table_collapsed.md}.
+Writes every non-\code{NULL} plot or table from the \code{outputs} element of one or
+more summary lists (as returned by any descrp summary function) to files in
+\code{output_dir}. File names encode both the variable name(s) and the kind of
+summary, e.g. \code{score_marginal_hist.png} or \code{group_table_collapsed.md}.
+}
+\details{
+ggplot2 objects are saved as PNG; \code{knitr_kable} tables are saved as \code{.md}.
+\code{NULL} outputs are silently skipped.
 }
 \examples{
 \dontrun{
