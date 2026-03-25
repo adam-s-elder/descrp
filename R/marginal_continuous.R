@@ -1,30 +1,26 @@
 #' Marginal distribution plots for a continuous variable
 #'
 #' Produces histogram variants for exploratory analysis of a continuous
-#' variable: a simple histogram of all observations, a trimmed histogram,
-#' and a log10 histogram.
+#' variable: a simple histogram of all observations, optionally a trimmed
+#' histogram, and a log10 histogram.
 #'
 #' @param data A data frame.
 #' @param var_name Character. Name of the column in `data` to summarise. The
 #'   column may be numeric, or a character vector parseable as numbers or dates
 #'   (via lubridate).
-#' @param trim Character. Trimming method for `hist_trimmed`. One of
-#'   `"trim_count"` (remove the `trim_n` smallest and `trim_n` largest
-#'   observations) or `"trim_percentile"` (remove observations below the
-#'   `trim_pct` quantile and above the `1 - trim_pct` quantile).
-#' @param trim_n Integer. Number of observations to remove from each tail when
-#'   `trim = "trim_count"`. Default `10`.
-#' @param trim_pct Numeric in (0, 0.5). Tail fraction to remove when
-#'   `trim = "trim_percentile"`. Default `0.01` (1%).
+#' @param trim A trimming function or `NULL`. If `NULL`, `hist_trimmed` is
+#'   omitted. Otherwise, the function must accept a numeric vector and return
+#'   an integer vector of the same length with `0` for values to keep and `1`
+#'   for values to trim. Use [trim_count()] or [trim_quantile()] to create
+#'   suitable functions. Default `trim_count()`.
 #'
 #' @return A named list with the following elements:
 #' \describe{
 #'   \item{`outputs`}{A named list of [ggplot2::ggplot()] objects:
 #'     \itemize{
 #'       \item `hist` — histogram of all non-missing observations.
-#'       \item `hist_trimmed` — histogram after tail trimming. `NULL` when
-#'         fewer than `2 * trim_n + 1` non-missing observations exist (for
-#'         `trim_count`) or when trimming would remove all observations.
+#'       \item `hist_trimmed` — histogram after trimming. `NULL` when `trim`
+#'         is `NULL` or trimming removes all observations.
 #'       \item `hist_log` — histogram on a log10 x-axis using only positive
 #'         values. `NULL` for date columns or when no positive values exist.
 #'     }
@@ -48,13 +44,17 @@
 #' out$outputs$hist
 #' out$outputs$hist_trimmed
 #'
+#' # No trimming
+#' out2 <- marginal_continuous(df, "score", trim = NULL)
+#'
+#' # Remove 5 from each tail
+#' out3 <- marginal_continuous(df, "score", trim = trim_count(5))
+#'
+#' # Remove outer 2% of values
+#' out4 <- marginal_continuous(df, "score", trim = trim_quantile(0.02))
+#'
 #' @export
-marginal_continuous <- function(data, var_name,
-                                trim     = c("trim_count", "trim_percentile"),
-                                trim_n   = 10L,
-                                trim_pct = 0.01) {
-  trim <- match.arg(trim)
-
+marginal_continuous <- function(data, var_name, trim = trim_count()) {
   x <- data[[var_name]]
 
   is_date <- FALSE
@@ -116,54 +116,21 @@ marginal_continuous <- function(data, var_name,
   hist_trimmed      <- NULL
   hist_trimmed_excl <- NULL
 
-  enough_obs <- if (trim == "trim_count") length(x) > 2L * trim_n else length(x) > 0L
+  if (!is.null(trim)) {
+    trim_mask <- trim(x)
+    x_trimmed <- x[trim_mask == 0L]
+    excluded  <- x[trim_mask == 1L]
+    n_trimmed <- length(excluded)
+    n_kept    <- length(x_trimmed)
 
-  if (!enough_obs) {
-    message(sprintf(
-      "`hist_trimmed` requires more than %d non-missing observations; returning NULL.",
-      2L * trim_n
-    ))
-  } else {
-    if (trim == "trim_count") {
-      sorted_x      <- sort(x)
-      n             <- length(sorted_x)
-      excluded      <- c(sorted_x[seq_len(trim_n)], sorted_x[seq(n - trim_n + 1L, n)])
-      x_trimmed     <- sorted_x[seq(trim_n + 1L, n - trim_n)]
-
-      if (is_date) {
-        small_str <- format(sorted_x[seq_len(trim_n)])
-        large_str <- format(sorted_x[seq(n - trim_n + 1L, n)])
-      } else {
-        small_str <- signif(sorted_x[seq_len(trim_n)], 2)
-        large_str <- signif(sorted_x[seq(n - trim_n + 1L, n)], 2)
-      }
-
-      caption_text <- paste0(
-        trim_n, " smallest observations: ",
-        paste(small_str, collapse = ", "),
-        "\n", trim_n, " largest observations: ",
-        paste(large_str, collapse = ", "),
-        "\n", na_text
-      )
-    } else {
-      low       <- quantile(x, trim_pct,       names = FALSE)
-      high      <- quantile(x, 1 - trim_pct,   names = FALSE)
-      keep_mask <- x >= low & x <= high
-      excluded  <- x[!keep_mask]
-      x_trimmed <- x[keep_mask]
-
-      caption_text <- paste0(
-        sprintf("Bottom %.1f%% (< %s) and top %.1f%% (> %s) removed.",
-                trim_pct * 100, signif(low, 3),
-                trim_pct * 100, signif(high, 3)),
-        "\n", na_text
-      )
-    }
-
-    if (length(x_trimmed) == 0L) {
+    if (n_kept == 0L) {
       message("`hist_trimmed`: trimming removed all observations; returning NULL.")
     } else {
       hist_trimmed_excl <- excluded
+      caption_text <- sprintf(
+        "%d observation(s) trimmed; %d kept.\n%s",
+        n_trimmed, n_kept, na_text
+      )
 
       hist_trimmed <- ggplot2::ggplot(data.frame(x = x_trimmed), ggplot2::aes(x = x)) +
         ggplot2::geom_histogram() +

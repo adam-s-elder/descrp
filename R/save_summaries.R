@@ -97,7 +97,10 @@ save_summaries <- function(
     } else if (type == "continuous_discrete_joint") {
       # Use embedded recommended height when it exceeds the caller's default
       h <- max(height, s$.plot_height %||% height)
-      plots <- list(hist_faceted = s$outputs$hist_faceted)
+      plots <- list(
+        hist_faceted         = s$outputs$hist_faceted,
+        hist_faceted_trimmed = s$outputs$hist_faceted_trimmed
+      )
       saved <- c(saved, .save_plots(plots, stem, output_dir, width, h, dpi))
       tables <- list(summary_table = s$outputs$summary_table)
       saved <- c(saved, .save_tables(tables, stem, output_dir))

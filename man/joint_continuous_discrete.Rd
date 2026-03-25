@@ -4,7 +4,7 @@
 \alias{joint_continuous_discrete}
 \title{Joint distribution of a continuous and a discrete variable}
 \usage{
-joint_continuous_discrete(data, cont_var, disc_var)
+joint_continuous_discrete(data, cont_var, disc_var, trim = trim_count())
 }
 \arguments{
 \item{data}{A data frame.}
@@ -12,6 +12,12 @@ joint_continuous_discrete(data, cont_var, disc_var)
 \item{cont_var}{Character. Name of the continuous (numeric) column.}
 
 \item{disc_var}{Character. Name of the discrete (categorical) column.}
+
+\item{trim}{A trimming function or \code{NULL}. If \code{NULL}, \code{hist_faceted_trimmed}
+is omitted. Otherwise, the function is applied to the continuous variable;
+rows flagged as trimmed are excluded from the trimmed plot. Use
+\code{\link[=trim_count]{trim_count()}} or \code{\link[=trim_quantile]{trim_quantile()}} to create suitable functions. Default
+\code{trim_count()}.}
 }
 \value{
 A named list with the following elements:
@@ -21,13 +27,23 @@ A named list with the following elements:
 \item \code{hist_faceted} — \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} faceted histogram, one
 panel per level of \code{disc_var}. \code{NULL} when \code{disc_var} has more than
 10 levels.
+\item \code{hist_faceted_trimmed} — faceted histogram on the trimmed
+continuous values. \code{NULL} when \code{trim} is \code{NULL}, \code{disc_var} has
+more than 10 levels, or trimming removes all observations.
 \item \code{summary_table} — \code{knitr_kable} markdown table with columns for
 level, n, \%, mean, median, and SD of \code{cont_var}. Sorted descending
 by count with the \code{NA} level last.
 }
 }
-\item{\code{exclusions}}{Named list with \code{hist_faceted = NULL} and
-\code{summary_table = NULL} (no observations are excluded).}
+\item{\code{exclusions}}{Named list:
+\itemize{
+\item \code{hist_faceted} — \code{NULL}.
+\item \code{hist_faceted_trimmed} — data frame of excluded rows (columns
+named after \code{cont_var} and \code{disc_var}), or \code{NULL} when
+\code{hist_faceted_trimmed} is \code{NULL}.
+\item \code{summary_table} — \code{NULL}.
+}
+}
 \item{\code{.var_name}}{Combined variable name for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{Character \code{"continuous_discrete_joint"}.}
@@ -37,13 +53,13 @@ by count with the \code{NA} level last.
 }
 \description{
 Produces a faceted histogram showing the distribution of a continuous
-variable separately for each level of a discrete variable, and a per-level
-summary table.
+variable separately for each level of a discrete variable, optionally a
+trimmed version of the same plot, and a per-level summary table.
 }
 \details{
 Each histogram panel includes dashed vertical lines at the median (blue) and
 mode (red) of the continuous variable within that level, annotated with
-their values. The faceted plot is only produced when the discrete variable
+their values. The faceted plots are only produced when the discrete variable
 has 10 or fewer levels; the recommended export height is increased
 automatically when there are 5 or more levels.
 
@@ -59,5 +75,8 @@ df <- data.frame(
 out <- joint_continuous_discrete(df, "score", "group")
 out$outputs$hist_faceted
 out$outputs$summary_table
+
+# No trimming
+out2 <- joint_continuous_discrete(df, "score", "group", trim = NULL)
 
 }

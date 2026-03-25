@@ -45,17 +45,23 @@ list(
 
 | Function | `.summary_type` | `outputs` keys |
 |---|---|---|
-| `marginal_continuous(data, var_name, trim, trim_n, trim_pct)` | `"continuous_marginal"` | `hist`, `hist_trimmed`, `hist_log` |
+| `marginal_continuous(data, var_name, trim)` | `"continuous_marginal"` | `hist`, `hist_trimmed`, `hist_log` |
 | `marginal_discrete(data, var_name)` | `"discrete_marginal"` | `table`, `table_collapsed` |
-| `joint_continuous_continuous(data, var1, var2, trim, trim_n, trim_pct)` | `"continuous_continuous_joint"` | `scatter`, `scatter_trimmed` |
-| `joint_continuous_discrete(data, cont_var, disc_var)` | `"continuous_discrete_joint"` | `hist_faceted`, `summary_table` |
+| `joint_continuous_continuous(data, var1, var2, trim)` | `"continuous_continuous_joint"` | `scatter`, `scatter_trimmed` |
+| `joint_continuous_discrete(data, cont_var, disc_var, trim)` | `"continuous_discrete_joint"` | `hist_faceted`, `hist_faceted_trimmed`, `summary_table` |
 | `joint_discrete_discrete(data, var1, var2)` | `"discrete_discrete_joint"` | `crosstab`, `crosstab_transposed` |
 | `spatial_summary(data, spatial_var, summary_var, spatial_type, metric)` | `"spatial_summary"` | `map`, `scatter` |
 
-### Trim argument (`marginal_continuous`, `joint_continuous_continuous`)
+### Trim argument (`marginal_continuous`, `joint_continuous_continuous`, `joint_continuous_discrete`)
 
-- `trim = "trim_count"` (default): removes `trim_n` smallest and `trim_n` largest observations (default `trim_n = 10` for marginal, `5` for joint).
-- `trim = "trim_percentile"`: removes values outside `[quantile(x, trim_pct), quantile(x, 1-trim_pct)]` (default `trim_pct = 0.01`).
+The `trim` argument accepts a trimming function or `NULL`. If `NULL`, no trimmed output is produced.
+
+A trimming function takes a numeric vector and returns an integer vector of the same length: `0` = keep, `1` = trim. The trimmed summary is built from the kept subset; the excluded values are stored in `exclusions`.
+
+Two trimming functionals are exported (like ggplot2 scale functions — they return a function):
+
+- `trim_count(n = 10L)`: returns a function that marks the `n` smallest and `n` largest observations as trimmed. Default `n = 10` for marginal functions, `n = 5` for joint.
+- `trim_quantile(pct = 0.01)`: returns a function that marks values outside `[quantile(x, pct), quantile(x, 1-pct)]` as trimmed.
 
 ### `save_summaries()`
 

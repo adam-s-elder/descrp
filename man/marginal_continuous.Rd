@@ -4,13 +4,7 @@
 \alias{marginal_continuous}
 \title{Marginal distribution plots for a continuous variable}
 \usage{
-marginal_continuous(
-  data,
-  var_name,
-  trim = c("trim_count", "trim_percentile"),
-  trim_n = 10L,
-  trim_pct = 0.01
-)
+marginal_continuous(data, var_name, trim = trim_count())
 }
 \arguments{
 \item{data}{A data frame.}
@@ -19,16 +13,11 @@ marginal_continuous(
 column may be numeric, or a character vector parseable as numbers or dates
 (via lubridate).}
 
-\item{trim}{Character. Trimming method for \code{hist_trimmed}. One of
-\code{"trim_count"} (remove the \code{trim_n} smallest and \code{trim_n} largest
-observations) or \code{"trim_percentile"} (remove observations below the
-\code{trim_pct} quantile and above the \code{1 - trim_pct} quantile).}
-
-\item{trim_n}{Integer. Number of observations to remove from each tail when
-\code{trim = "trim_count"}. Default \code{10}.}
-
-\item{trim_pct}{Numeric in (0, 0.5). Tail fraction to remove when
-\code{trim = "trim_percentile"}. Default \code{0.01} (1\%).}
+\item{trim}{A trimming function or \code{NULL}. If \code{NULL}, \code{hist_trimmed} is
+omitted. Otherwise, the function must accept a numeric vector and return
+an integer vector of the same length with \code{0} for values to keep and \code{1}
+for values to trim. Use \code{\link[=trim_count]{trim_count()}} or \code{\link[=trim_quantile]{trim_quantile()}} to create
+suitable functions. Default \code{trim_count()}.}
 }
 \value{
 A named list with the following elements:
@@ -36,9 +25,8 @@ A named list with the following elements:
 \item{\code{outputs}}{A named list of \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} objects:
 \itemize{
 \item \code{hist} — histogram of all non-missing observations.
-\item \code{hist_trimmed} — histogram after tail trimming. \code{NULL} when
-fewer than \code{2 * trim_n + 1} non-missing observations exist (for
-\code{trim_count}) or when trimming would remove all observations.
+\item \code{hist_trimmed} — histogram after trimming. \code{NULL} when \code{trim}
+is \code{NULL} or trimming removes all observations.
 \item \code{hist_log} — histogram on a log10 x-axis using only positive
 values. \code{NULL} for date columns or when no positive values exist.
 }
@@ -58,13 +46,22 @@ when \code{hist_trimmed} is \code{NULL}.
 }
 \description{
 Produces histogram variants for exploratory analysis of a continuous
-variable: a simple histogram of all observations, a trimmed histogram,
-and a log10 histogram.
+variable: a simple histogram of all observations, optionally a trimmed
+histogram, and a log10 histogram.
 }
 \examples{
 df <- data.frame(score = rnorm(200))
 out <- marginal_continuous(df, "score")
 out$outputs$hist
 out$outputs$hist_trimmed
+
+# No trimming
+out2 <- marginal_continuous(df, "score", trim = NULL)
+
+# Remove 5 from each tail
+out3 <- marginal_continuous(df, "score", trim = trim_count(5))
+
+# Remove outer 2\% of values
+out4 <- marginal_continuous(df, "score", trim = trim_quantile(0.02))
 
 }

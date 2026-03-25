@@ -11,54 +11,54 @@ test_that("marginal_continuous returns outputs/exclusions structure", {
   expect_s3_class(out$outputs$hist_log,     "ggplot")
 })
 
-test_that("hist_trimmed caption contains smallest and largest values", {
-  set.seed(1)
-  df <- data.frame(x = rnorm(100))
-  out <- marginal_continuous(df, "x")
-  caption <- out$outputs$hist_trimmed$labels$caption
-  expect_match(caption, "smallest observations")
-  expect_match(caption, "largest observations")
-})
-
-test_that("hist_trimmed uses 2 significant figures in caption", {
-  x <- c(seq(0.001234, 0.01234, length.out = 10), rep(5, 80), seq(100.56, 110.56, length.out = 10))
-  out <- marginal_continuous(data.frame(x = x), "x")
-  caption <- out$outputs$hist_trimmed$labels$caption
-  expect_match(caption, "0.0012")
-})
-
-test_that("hist_trimmed is NULL with a message when <= 20 observations (trim_count)", {
-  expect_message(
-    out <- marginal_continuous(data.frame(x = 1:15), "x"),
-    "hist_trimmed"
-  )
+test_that("trim = NULL omits hist_trimmed", {
+  df <- data.frame(x = 1:100)
+  out <- marginal_continuous(df, "x", trim = NULL)
   expect_null(out$outputs$hist_trimmed)
   expect_null(out$exclusions$hist_trimmed)
 })
 
-test_that("hist_trimmed data excludes the 10 smallest and 10 largest (trim_count)", {
+test_that("trim_count(10) excludes 10 smallest and 10 largest", {
   df <- data.frame(x = 1:100)
-  out <- marginal_continuous(df, "x")
+  out <- marginal_continuous(df, "x", trim = trim_count(10))
   trimmed_data <- out$outputs$hist_trimmed$data$x
   expect_true(all(trimmed_data >= 11))
   expect_true(all(trimmed_data <= 90))
 })
 
-test_that("exclusions$hist_trimmed contains excluded values (trim_count)", {
+test_that("exclusions$hist_trimmed contains the trimmed values (trim_count)", {
   df <- data.frame(x = 1:100)
-  out <- marginal_continuous(df, "x")
-  expect_length(out$exclusions$hist_trimmed, 20)  # 10 smallest + 10 largest
+  out <- marginal_continuous(df, "x", trim = trim_count(10))
+  expect_length(out$exclusions$hist_trimmed, 20)
   expect_true(all(sort(out$exclusions$hist_trimmed) == c(1:10, 91:100)))
 })
 
-test_that("trim_percentile trims by quantile", {
-  set.seed(1)
-  df <- data.frame(x = 1:200)
-  out <- marginal_continuous(df, "x", trim = "trim_percentile", trim_pct = 0.05)
+test_that("hist_trimmed caption reports count trimmed and kept", {
+  df <- data.frame(x = 1:100)
+  out <- marginal_continuous(df, "x", trim = trim_count(10))
   caption <- out$outputs$hist_trimmed$labels$caption
-  expect_match(caption, "Bottom 5")
-  expect_match(caption, "top 5")
+  expect_match(caption, "20 observation")
+  expect_match(caption, "80 kept")
+})
+
+test_that("trim_quantile trims by quantile", {
+  df <- data.frame(x = 1:200)
+  out <- marginal_continuous(df, "x", trim = trim_quantile(0.05))
+  expect_s3_class(out$outputs$hist_trimmed, "ggplot")
   expect_false(is.null(out$exclusions$hist_trimmed))
+  # Bottom 5% of 200 = 10 values, top 5% = 10 values
+  expect_length(out$exclusions$hist_trimmed, 20)
+})
+
+test_that("hist_trimmed is NULL with a message when trimming removes all", {
+  # All values are identical -> trim_count marks all as trim when n >= half
+  expect_message(
+    out <- marginal_continuous(data.frame(x = rep(1, 5)), "x",
+                               trim = trim_count(10)),
+    "trimming removed all"
+  )
+  expect_null(out$outputs$hist_trimmed)
+  expect_null(out$exclusions$hist_trimmed)
 })
 
 test_that("NA count and percentage appear in caption on hist and hist_trimmed", {
@@ -117,4 +117,36 @@ test_that("exclusions$hist and exclusions$hist_log are always NULL", {
   out <- marginal_continuous(data.frame(x = 1:100), "x")
   expect_null(out$exclusions$hist)
   expect_null(out$exclusions$hist_log)
+})
+
+test_that("trim_count functional returns a function", {
+  f <- trim_count(5)
+  expect_type(f, "closure")
+  result <- f(1:20)
+  expect_length(result, 20)
+  expect_equal(sum(result), 10)  # 5 smallest + 5 largest
+  expect_true(all(result[1:5] == 1L))
+  expect_true(all(result[16:20] == 1L))
+  expect_true(all(result[6:15] == 0L))
+})
+
+test_that("trim_quantile functional returns a function", {
+  f <- trim_quantile(0.1)
+  expect_type(f, "closure")
+  result <- f(1:100)
+  expect_length(result, 100)
+  expect_equal(sum(result == 1L), 18)  # values < q10 or > q90
+})
+
+test_that("trim_count ignores NAs in ordering", {
+  f <- trim_count(2)
+  x <- c(NA, 1, 2, 3, 4, 5, NA)
+  result <- f(x)
+  expect_length(result, 7)
+  expect_equal(result[is.na(x)], c(0L, 0L))  # NAs untouched
+  # 2 smallest non-NA: positions 2,3; 2 largest: positions 5,6
+  expect_equal(result[2], 1L)
+  expect_equal(result[3], 1L)
+  expect_equal(result[5], 1L)
+  expect_equal(result[6], 1L)
 })
