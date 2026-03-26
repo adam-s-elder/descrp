@@ -36,8 +36,8 @@ A named list with:
 \itemize{
 \item \code{map} — ggplot2 choropleth. For county maps, each county is
 labelled with its value (3 significant figures).
-\item \code{scatter} — ggplot2 scatter of value (y) vs land area (x,
-log10 scale), labelled by county name or ZIP code, filtered to
+\item \code{scatter} — ggplot2 scatter of value (y) vs number of
+observations (x), labelled by county name or ZIP code, filtered to
 Washington state only.
 }
 }
@@ -50,7 +50,7 @@ Washington state only.
 \description{
 Aggregates a dataset by a spatial covariate (US county FIPS codes or ZIP
 codes) and returns a ggplot2 choropleth map plus a scatter plot of the value
-against area size. Only areas present in the summary dataset appear in the
+against observation count. Only areas present in the summary dataset appear in the
 map (left-join from data). The scatter plot is restricted to Washington
 state. For county-level maps, each county is labelled with its value.
 }

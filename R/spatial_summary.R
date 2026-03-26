@@ -278,7 +278,8 @@ spatial_summary <- function(
           nrow(scatter_df)
         )
       ) +
-      ggplot2::theme_bw()
+      ggplot2::theme_bw() + 
+      ggplot2::theme(legend.position = "bottom")
   }
 
   # --- build .var_name ----------------------------------------------------

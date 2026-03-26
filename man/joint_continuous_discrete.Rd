@@ -58,7 +58,7 @@ trimmed version of the same plot, and a per-level summary table.
 }
 \details{
 Each histogram panel includes dashed vertical lines at the median (blue) and
-mode (red) of the continuous variable within that level, annotated with
+mean (red) of the continuous variable within that level, annotated with
 their values. The faceted plots are only produced when the discrete variable
 has 10 or fewer levels; the recommended export height is increased
 automatically when there are 5 or more levels.
