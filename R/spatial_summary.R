@@ -144,7 +144,7 @@ spatial_summary <- function(
     shp_key <- "GEOID"
     label_col <- "NAME"
   } else {
-    shp <- tigris::zctas(cb = TRUE, year = 2024)
+    shp <- tigris::zctas(year = 2024)
     shp_key <- "ZCTA5CE20"
     label_col <- "ZCTA5CE20"
   }
