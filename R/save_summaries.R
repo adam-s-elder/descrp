@@ -71,9 +71,9 @@ save_summaries <- function(
 
     if (type == "continuous_marginal") {
       plots <- list(
-        marginal_hist         = s$outputs$hist,
+        marginal_hist = s$outputs$hist,
         marginal_hist_trimmed = s$outputs$hist_trimmed,
-        marginal_hist_log     = s$outputs$hist_log
+        marginal_hist_log = s$outputs$hist_log
       )
       saved <- c(
         saved,
@@ -81,13 +81,13 @@ save_summaries <- function(
       )
     } else if (type == "discrete_marginal") {
       tables <- list(
-        table           = s$outputs$table,
+        table = s$outputs$table,
         table_collapsed = s$outputs$table_collapsed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "continuous_continuous_joint") {
       plots <- list(
-        scatter         = s$outputs$scatter,
+        scatter = s$outputs$scatter,
         scatter_trimmed = s$outputs$scatter_trimmed
       )
       saved <- c(
@@ -98,7 +98,7 @@ save_summaries <- function(
       # Use embedded recommended height when it exceeds the caller's default
       h <- max(height, s$.plot_height %||% height)
       plots <- list(
-        hist_faceted         = s$outputs$hist_faceted,
+        hist_faceted = s$outputs$hist_faceted,
         hist_faceted_trimmed = s$outputs$hist_faceted_trimmed
       )
       saved <- c(saved, .save_plots(plots, stem, output_dir, width, h, dpi))
@@ -106,13 +106,13 @@ save_summaries <- function(
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "discrete_discrete_joint") {
       tables <- list(
-        crosstab            = s$outputs$crosstab,
+        crosstab = s$outputs$crosstab,
         crosstab_transposed = s$outputs$crosstab_transposed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "spatial_summary") {
       plots <- list(
-        map     = s$outputs$map,
+        map = s$outputs$map,
         scatter = s$outputs$scatter
       )
       saved <- c(

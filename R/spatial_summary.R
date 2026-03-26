@@ -140,8 +140,9 @@ spatial_summary <- function(
   options(tigris_use_cache = TRUE)
 
   if (spatial_type == "county") {
-    shp <- tigris::counties(cb = TRUE, resolution = "20m", year = 2024)
-    shp_key <- "GEOID"
+    shp <- tigris::counties(cb = TRUE, resolution = "20m", year = 2020) |>
+      filter(STATEFP == 53)
+    shp_key <- "NAME"
     label_col <- "NAME"
   } else {
     shp <- tigris::zctas(year = 2024)
@@ -155,7 +156,12 @@ spatial_summary <- function(
   # For county joins, sanitize the key in both datasets so they match
   # regardless of case, leading/trailing whitespace, or internal spaces.
   if (spatial_type == "county") {
-    .sanitize_join_key <- function(x) gsub(" ", "_", trimws(tolower(x)))
+    .sanitize_join_key <- function(x) {
+      trimws(x) |>
+        tolower() |>
+        gsub(pattern = " County", replacement = "") |>
+        gsub(pattern = " ", replacement = "_")
+    }
     shp[[shp_key]] <- .sanitize_join_key(shp[[shp_key]])
     agg_df$geo_id <- .sanitize_join_key(agg_df$geo_id)
   }
@@ -208,7 +214,7 @@ spatial_summary <- function(
         size = 8,
         colour = "grey40"
       ),
-      legend.position = "right"
+      legend.position = "bottom"
     )
 
   # For county maps, label each area with its value (3 sig figs)
@@ -242,7 +248,7 @@ spatial_summary <- function(
   } else {
     scatter_df <- sf::st_drop_geometry(shp_wa) |>
       dplyr::transmute(
-        n     = n,
+        n = n,
         value = value,
         label = as.character(.data[[scatter_label_col]])
       ) |>
@@ -278,7 +284,7 @@ spatial_summary <- function(
           nrow(scatter_df)
         )
       ) +
-      ggplot2::theme_bw() + 
+      ggplot2::theme_bw() +
       ggplot2::theme(legend.position = "bottom")
   }
 

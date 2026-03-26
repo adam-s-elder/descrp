@@ -67,8 +67,12 @@
 #' out2 <- joint_continuous_discrete(df, "score", "group", trim = NULL)
 #'
 #' @export
-joint_continuous_discrete <- function(data, cont_var, disc_var,
-                                      trim = trim_count()) {
+joint_continuous_discrete <- function(
+  data,
+  cont_var,
+  disc_var,
+  trim = trim_count()
+) {
   cont <- data[[cont_var]]
   disc <- data[[disc_var]]
 
@@ -89,45 +93,50 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
     ))
   }
   keep <- !is.na(cont)
-  cont      <- cont[keep]
+  cont <- cont[keep]
   disc_char <- disc_char[keep]
 
   # Sorted levels: descending count, NA last
   work_df <- data.frame(cont = cont, disc = disc_char)
-  level_counts  <- dplyr::count(work_df, disc, sort = TRUE)
+  level_counts <- dplyr::count(work_df, disc, sort = TRUE)
   levels_sorted <- level_counts$disc
   if (anyNA(levels_sorted) && !is.na(tail(levels_sorted, 1))) {
     levels_sorted <- c(levels_sorted[!is.na(levels_sorted)], NA_character_)
   }
 
   n_levels <- length(levels_sorted)
-  n_total  <- nrow(work_df)
+  n_total <- nrow(work_df)
 
   # --- Per-level stats -------------------------------------------------
   stats_df <- work_df |>
     dplyr::group_by(disc) |>
     dplyr::summarize(
-      n          = dplyr::n(),
-      pct        = dplyr::n() / n_total * 100,
-      mean_val   = mean(cont),
+      n = dplyr::n(),
+      pct = dplyr::n() / n_total * 100,
+      mean_val = mean(cont),
       median_val = stats::median(cont),
-      sd_val     = stats::sd(cont),
-      .groups    = "drop"
+      sd_val = stats::sd(cont),
+      .groups = "drop"
     ) |>
     dplyr::rename(level = disc) |>
-    dplyr::mutate(level = addNA(factor(level, levels = levels_sorted[!is.na(levels_sorted)]))) |>
+    dplyr::mutate(
+      level = addNA(factor(
+        level,
+        levels = levels_sorted[!is.na(levels_sorted)]
+      ))
+    ) |>
     dplyr::arrange(level) |>
     dplyr::mutate(level = as.character(level))
 
   # --- Summary table ---------------------------------------------------
   tbl_display <- stats_df |>
     dplyr::transmute(
-      level  = level,
-      n      = scales::comma(n),
-      pct    = paste0(round(pct, 1), "%"),
-      Mean   = round(mean_val, 2),
+      level = level,
+      n = scales::comma(n),
+      pct = paste0(round(pct, 1), "%"),
+      Mean = round(mean_val, 2),
       Median = round(median_val, 2),
-      SD     = round(sd_val, 2)
+      SD = round(sd_val, 2)
     )
   names(tbl_display) <- c(disc_var, "n", "%", "Mean", "Median", "SD")
   summary_table <- knitr::kable(
@@ -138,15 +147,17 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
 
   # --- Faceted histogram helper ----------------------------------------
   .make_faceted_hist <- function(cont_vals, disc_vals, lvls, caption_text) {
-    inner_df  <- data.frame(cont_val = cont_vals, disc_val = disc_vals)
+    inner_df <- data.frame(cont_val = cont_vals, disc_val = disc_vals)
     stats_sub <- inner_df |>
       dplyr::group_by(level = disc_val) |>
       dplyr::summarize(
         median_val = stats::median(cont_val),
-        mean_val   = mean(cont_val),
-        .groups    = "drop"
+        mean_val = mean(cont_val),
+        .groups = "drop"
       ) |>
-      dplyr::mutate(level = addNA(factor(level, levels = lvls[!is.na(lvls)]))) |>
+      dplyr::mutate(
+        level = addNA(factor(level, levels = lvls[!is.na(lvls)]))
+      ) |>
       dplyr::arrange(level) |>
       dplyr::mutate(level = as.character(level))
 
@@ -155,19 +166,22 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
 
     vline_wide <- data.frame(
       median_val = stats_sub$median_val,
-      mean_val   = stats_sub$mean_val
+      mean_val = stats_sub$mean_val
     )
-    vline_wide[[disc_var]] <- addNA(factor(stats_sub$level, levels = lvls[!is.na(lvls)]))
+    vline_wide[[disc_var]] <- addNA(factor(
+      stats_sub$level,
+      levels = lvls[!is.na(lvls)]
+    ))
 
     vline_df <- dplyr::bind_rows(
       data.frame(
         xintercept = vline_wide$median_val,
-        measure    = "Median",
+        measure = "Median",
         vjust_text = 1.4
       ),
       data.frame(
         xintercept = vline_wide$mean_val,
-        measure    = "Mean",
+        measure = "Mean",
         vjust_text = 2.8
       )
     )
@@ -177,7 +191,7 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
     ))
     vline_df$measure <- factor(vline_df$measure, levels = c("Median", "Mean"))
 
-    measure_colours  <- c(Median = "steelblue", Mean = "firebrick")
+    measure_colours <- c(Median = "steelblue", Mean = "firebrick")
     measure_linetypes <- c(Median = "dashed", Mean = "dotted")
 
     ncols <- if (length(lvls) >= 5) 1L else 2L
@@ -193,29 +207,29 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
         data = vline_df,
         ggplot2::aes(
           xintercept = xintercept,
-          colour     = measure,
-          linetype   = measure
+          colour = measure,
+          linetype = measure
         ),
         linewidth = 0.8
       ) +
       ggplot2::geom_text(
         data = vline_df,
         ggplot2::aes(
-          x     = xintercept,
-          y     = Inf,
+          x = xintercept,
+          y = Inf,
           label = paste0(measure, ": ", round(xintercept, 2)),
-          colour  = measure,
-          vjust   = vjust_text
+          colour = measure,
+          vjust = vjust_text
         ),
         hjust = -0.05,
-        size  = 2.8
+        size = 2.8
       ) +
       ggplot2::scale_colour_manual(values = measure_colours) +
       ggplot2::scale_linetype_manual(values = measure_linetypes) +
       ggplot2::guides(colour = "none", linetype = "none") +
       ggplot2::facet_wrap(
         stats::as.formula(paste("~", disc_var_name_formula)),
-        ncol   = ncols,
+        ncol = ncols,
         scales = "free_y"
       ) +
       ggplot2::labs(x = cont_var, y = "Count", caption = caption_text)
@@ -232,53 +246,67 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
       n_levels
     ))
     hist_faceted <- NULL
-    plot_height  <- 6
+    plot_height <- 6
   } else {
-    hist_faceted <- .make_faceted_hist(cont, disc_char, levels_sorted,
-                                       caption_text = NULL)
+    hist_faceted <- .make_faceted_hist(
+      cont,
+      disc_char,
+      levels_sorted,
+      caption_text = NULL
+    )
   }
 
   # --- Trimmed faceted histogram ---------------------------------------
-  hist_faceted_trimmed      <- NULL
+  hist_faceted_trimmed <- NULL
   hist_faceted_trimmed_excl <- NULL
 
   if (!is.null(trim) && n_levels <= 10) {
-    trim_mask  <- trim(cont)
-    cont_kept  <- cont[trim_mask == 0L]
-    disc_kept  <- disc_char[trim_mask == 0L]
-    n_trimmed  <- sum(trim_mask == 1L)
-    n_kept     <- length(cont_kept)
+    trim_mask <- trim(cont)
+    cont_kept <- cont[trim_mask == 0L]
+    disc_kept <- disc_char[trim_mask == 0L]
+    n_trimmed <- sum(trim_mask == 1L)
+    n_kept <- length(cont_kept)
 
     if (n_kept == 0L) {
-      message("`hist_faceted_trimmed`: trimming removed all observations; returning NULL.")
+      message(
+        "`hist_faceted_trimmed`: trimming removed all observations; returning NULL."
+      )
     } else {
-      excl_df <- data.frame(cont[trim_mask == 1L], disc_char[trim_mask == 1L],
-                             stringsAsFactors = FALSE)
+      excl_df <- data.frame(
+        cont[trim_mask == 1L],
+        disc_char[trim_mask == 1L],
+        stringsAsFactors = FALSE
+      )
       names(excl_df) <- c(cont_var, disc_var)
       hist_faceted_trimmed_excl <- excl_df
 
       caption_text <- sprintf(
         "%d observation(s) trimmed; %d kept.",
-        n_trimmed, n_kept
+        n_trimmed,
+        n_kept
       )
-      hist_faceted_trimmed <- .make_faceted_hist(cont_kept, disc_kept,
-                                                  levels_sorted, caption_text)
+      hist_faceted_trimmed <- .make_faceted_hist(
+        cont_kept,
+        disc_kept,
+        levels_sorted,
+        caption_text
+      )
     }
   }
 
   list(
     outputs = list(
-      hist_faceted         = hist_faceted,
+      hist_faceted = hist_faceted,
       hist_faceted_trimmed = hist_faceted_trimmed,
-      summary_table        = summary_table
+      summary_table = summary_table
     ),
     exclusions = list(
-      hist_faceted         = NULL,
+      hist_faceted = NULL,
       hist_faceted_trimmed = hist_faceted_trimmed_excl,
-      summary_table        = NULL
+      summary_table = NULL
     ),
-    .var_name     = paste(cont_var, disc_var, sep = "_"),
+    .var_name = paste(cont_var, disc_var, sep = "_"),
     .summary_type = "continuous_discrete_joint",
-    .plot_height  = plot_height
+    .plot_height = plot_height
   )
 }

@@ -74,10 +74,25 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
       if (!requireNamespace("lubridate", quietly = TRUE)) {
         stop("`lubridate` is required for date parsing. Please install it.")
       }
-      date_formats <- c("ymd", "mdy", "dmy", "Ymd", "Y/m/d", "m/d/Y", "d/m/Y",
-                        "ymd HM", "ymd HMS", "mdy HM", "mdy HMS")
+      date_formats <- c(
+        "ymd",
+        "mdy",
+        "dmy",
+        "Ymd",
+        "Y/m/d",
+        "m/d/Y",
+        "d/m/Y",
+        "ymd HM",
+        "ymd HMS",
+        "mdy HM",
+        "mdy HMS"
+      )
       x_date <- suppressWarnings(
-        as.Date(lubridate::parse_date_time(x, orders = date_formats, quiet = TRUE))
+        as.Date(lubridate::parse_date_time(
+          x,
+          orders = date_formats,
+          quiet = TRUE
+        ))
       )
       newly_na_date <- sum(is.na(x_date) & !orig_na)
 
@@ -85,7 +100,9 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
         x <- x_date
         is_date <- TRUE
       } else {
-        stop("`x` must be numeric or a character vector parseable as numbers or dates.")
+        stop(
+          "`x` must be numeric or a character vector parseable as numbers or dates."
+        )
       }
     }
   }
@@ -95,10 +112,12 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
   }
 
   n_total <- length(x)
-  n_na    <- sum(is.na(x))
-  na_text <- sprintf("Missing: %s (%s%%)",
-                     scales::comma(n_na),
-                     round(n_na / n_total * 100, 1))
+  n_na <- sum(is.na(x))
+  na_text <- sprintf(
+    "Missing: %s (%s%%)",
+    scales::comma(n_na),
+    round(n_na / n_total * 100, 1)
+  )
 
   x <- x[!is.na(x)]
 
@@ -113,26 +132,33 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
   }
 
   # --- Trimmed histogram ---------------------------------------------------
-  hist_trimmed      <- NULL
+  hist_trimmed <- NULL
   hist_trimmed_excl <- NULL
 
   if (!is.null(trim)) {
     trim_mask <- trim(x)
     x_trimmed <- x[trim_mask == 0L]
-    excluded  <- x[trim_mask == 1L]
+    excluded <- x[trim_mask == 1L]
     n_trimmed <- length(excluded)
-    n_kept    <- length(x_trimmed)
+    n_kept <- length(x_trimmed)
 
     if (n_kept == 0L) {
-      message("`hist_trimmed`: trimming removed all observations; returning NULL.")
+      message(
+        "`hist_trimmed`: trimming removed all observations; returning NULL."
+      )
     } else {
       hist_trimmed_excl <- excluded
       caption_text <- sprintf(
         "%d observation(s) trimmed; %d kept.\n%s",
-        n_trimmed, n_kept, na_text
+        n_trimmed,
+        n_kept,
+        na_text
       )
 
-      hist_trimmed <- ggplot2::ggplot(data.frame(x = x_trimmed), ggplot2::aes(x = x)) +
+      hist_trimmed <- ggplot2::ggplot(
+        data.frame(x = x_trimmed),
+        ggplot2::aes(x = x)
+      ) +
         ggplot2::geom_histogram() +
         ggplot2::labs(x = var_name, y = "Count", caption = caption_text)
 
@@ -146,17 +172,21 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
   if (is_date) {
     hist_log <- NULL
   } else {
-    x_pos    <- x[x > 0]
+    x_pos <- x[x > 0]
     n_nonpos <- length(x) - length(x_pos)
 
     if (length(x_pos) == 0L) {
-      message("`hist_log` requires at least one positive value; returning NULL.")
+      message(
+        "`hist_log` requires at least one positive value; returning NULL."
+      )
       hist_log <- NULL
     } else {
       log_caption <- na_text
       if (n_nonpos > 0L) {
         log_caption <- paste0(
-          "Excluded ", scales::comma(n_nonpos), " non-positive value(s) from log scale.\n",
+          "Excluded ",
+          scales::comma(n_nonpos),
+          " non-positive value(s) from log scale.\n",
           na_text
         )
       }
@@ -169,16 +199,16 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
 
   list(
     outputs = list(
-      hist         = hist_plot,
+      hist = hist_plot,
       hist_trimmed = hist_trimmed,
-      hist_log     = hist_log
+      hist_log = hist_log
     ),
     exclusions = list(
-      hist         = NULL,
+      hist = NULL,
       hist_trimmed = hist_trimmed_excl,
-      hist_log     = NULL
+      hist_log = NULL
     ),
-    .var_name     = var_name,
+    .var_name = var_name,
     .summary_type = "continuous_marginal"
   )
 }
