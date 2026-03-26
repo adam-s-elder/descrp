@@ -3,7 +3,7 @@
 #'
 #' Aggregates a dataset by a spatial covariate (US county FIPS codes or ZIP
 #' codes) and returns a ggplot2 choropleth map plus a scatter plot of the value
-#' against area size. Only areas present in the summary dataset appear in the
+#' against observation count. Only areas present in the summary dataset appear in the
 #' map (left-join from data). The scatter plot is restricted to Washington
 #' state. For county-level maps, each county is labelled with its value.
 #'
@@ -27,8 +27,8 @@
 #'     \itemize{
 #'       \item `map` — ggplot2 choropleth. For county maps, each county is
 #'         labelled with its value (3 significant figures).
-#'       \item `scatter` — ggplot2 scatter of value (y) vs land area (x,
-#'         log10 scale), labelled by county name or ZIP code, filtered to
+#'       \item `scatter` — ggplot2 scatter of value (y) vs number of
+#'         observations (x), labelled by county name or ZIP code, filtered to
 #'         Washington state only.
 #'     }
 #'   }
@@ -56,12 +56,13 @@
 #' }
 #'
 #' @export
-spatial_summary <- function(data,
-                            spatial_var,
-                            summary_var  = NULL,
-                            spatial_type = c("county", "zipcode"),
-                            metric       = "mean") {
-
+spatial_summary <- function(
+  data,
+  spatial_var,
+  summary_var = NULL,
+  spatial_type = c("county", "zipcode"),
+  metric = "mean"
+) {
   spatial_type <- match.arg(spatial_type)
 
   # --- input validation ---------------------------------------------------
@@ -83,46 +84,54 @@ spatial_summary <- function(data,
 
   valid_metrics <- c("mean", "median", "sum", "sd", "min", "max")
   if (!metric %in% valid_metrics) {
-    stop(sprintf("`metric` must be one of: %s.", paste(valid_metrics, collapse = ", ")))
+    stop(sprintf(
+      "`metric` must be one of: %s.",
+      paste(valid_metrics, collapse = ", ")
+    ))
   }
 
-  if (!requireNamespace("sf",     quietly = TRUE)) stop("Package 'sf' is required. Install it with install.packages('sf').")
-  if (!requireNamespace("tigris", quietly = TRUE)) stop("Package 'tigris' is required. Install it with install.packages('tigris').")
+  if (!requireNamespace("sf", quietly = TRUE)) {
+    stop("Package 'sf' is required. Install it with install.packages('sf').")
+  }
+  if (!requireNamespace("tigris", quietly = TRUE)) {
+    stop(
+      "Package 'tigris' is required. Install it with install.packages('tigris')."
+    )
+  }
 
   # --- aggregate data by spatial unit -------------------------------------
 
-  geo_col <- as.character(data[[spatial_var]])
-
   # Pad to 5 characters with leading zeros (standard FIPS / ZIP format)
-  geo_col <- formatC(geo_col, width = 5, flag = "0")
+  work_df <- dplyr::mutate(
+    data,
+    geo_id = formatC(as.character(.data[[spatial_var]]), width = 5, flag = "0")
+  )
 
   if (is.null(summary_var)) {
-    agg <- tapply(rep(1L, nrow(data)), geo_col, sum)
-    agg_df <- data.frame(
-      geo_id = names(agg),
-      value  = as.numeric(agg),
-      stringsAsFactors = FALSE
-    )
+    agg_df <- dplyr::count(work_df, geo_id, name = "value")
+    agg_df$n <- agg_df$value
     fill_label <- "Count"
   } else {
-    metric_fn <- switch(metric,
-      mean   = function(x) mean(x,   na.rm = TRUE),
-      median = function(x) median(x, na.rm = TRUE),
-      sum    = function(x) sum(x,    na.rm = TRUE),
-      sd     = function(x) sd(x,     na.rm = TRUE),
-      min    = function(x) min(x,    na.rm = TRUE),
-      max    = function(x) max(x,    na.rm = TRUE)
-    )
-    sv     <- data[[summary_var]]
-    agg    <- tapply(sv, geo_col, metric_fn)
-    agg_df <- data.frame(
-      geo_id = names(agg),
-      value  = as.numeric(agg),
-      stringsAsFactors = FALSE
-    )
+    agg_df <- work_df |>
+      dplyr::group_by(geo_id) |>
+      dplyr::summarize(
+        n = dplyr::n(),
+        value = switch(
+          metric,
+          mean = mean(.data[[summary_var]], na.rm = TRUE),
+          median = median(.data[[summary_var]], na.rm = TRUE),
+          sum = sum(.data[[summary_var]], na.rm = TRUE),
+          sd = sd(.data[[summary_var]], na.rm = TRUE),
+          min = min(.data[[summary_var]], na.rm = TRUE),
+          max = max(.data[[summary_var]], na.rm = TRUE)
+        ),
+        .groups = "drop"
+      )
     fill_label <- paste0(
-      toupper(substring(metric, 1, 1)), substring(metric, 2),
-      "\n", summary_var
+      toupper(substring(metric, 1, 1)),
+      substring(metric, 2),
+      "\n",
+      summary_var
     )
   }
 
@@ -131,17 +140,25 @@ spatial_summary <- function(data,
   options(tigris_use_cache = TRUE)
 
   if (spatial_type == "county") {
-    shp     <- tigris::counties(cb = TRUE, resolution = "20m", year = 2020)
+    shp <- tigris::counties(cb = TRUE, resolution = "20m", year = 2024)
     shp_key <- "GEOID"
     label_col <- "NAME"
   } else {
-    shp     <- tigris::zctas(cb = TRUE, year = 2020)
+    shp <- tigris::zctas(cb = TRUE, year = 2024)
     shp_key <- "ZCTA5CE20"
     label_col <- "ZCTA5CE20"
   }
 
   shp <- sf::st_as_sf(shp)
   shp[[shp_key]] <- as.character(shp[[shp_key]])
+
+  # For county joins, sanitize the key in both datasets so they match
+  # regardless of case, leading/trailing whitespace, or internal spaces.
+  if (spatial_type == "county") {
+    .sanitize_join_key <- function(x) gsub(" ", "_", trimws(tolower(x)))
+    shp[[shp_key]] <- .sanitize_join_key(shp[[shp_key]])
+    agg_df$geo_id <- .sanitize_join_key(agg_df$geo_id)
+  }
 
   # --- left-join: only areas present in summary dataset -------------------
   # dplyr::inner_join preserves sf class when the left table is an sf object
@@ -179,14 +196,18 @@ spatial_summary <- function(data,
   gg_map <- ggplot2::ggplot(shp_joined) +
     ggplot2::geom_sf(ggplot2::aes(fill = value), colour = NA) +
     ggplot2::scale_fill_viridis_c(
-      name     = fill_label,
-      option   = "plasma"
+      name = fill_label,
+      option = "plasma"
     ) +
     ggplot2::labs(title = title, caption = caption) +
     ggplot2::theme_void() +
     ggplot2::theme(
-      plot.title      = ggplot2::element_text(hjust = 0.5, size = 13, face = "bold"),
-      plot.caption    = ggplot2::element_text(hjust = 0, size = 8, colour = "grey40"),
+      plot.title = ggplot2::element_text(hjust = 0.5, size = 13, face = "bold"),
+      plot.caption = ggplot2::element_text(
+        hjust = 0,
+        size = 8,
+        colour = "grey40"
+      ),
       legend.position = "right"
     )
 
@@ -195,7 +216,7 @@ spatial_summary <- function(data,
     gg_map <- gg_map +
       ggplot2::geom_sf_text(
         ggplot2::aes(label = signif(value, 3)),
-        size   = 2,
+        size = 2,
         colour = "white"
       )
   }
@@ -204,45 +225,58 @@ spatial_summary <- function(data,
 
   if (spatial_type == "county") {
     # STATEFP "53" = Washington
-    shp_wa <- shp_joined[shp_joined$STATEFP == "53", ]
+    shp_wa <- dplyr::filter(shp_joined, STATEFP == "53")
     scatter_label_col <- "NAME"
   } else {
     # Filter ZCTAs spatially to Washington state
     wa_boundary <- tigris::states(cb = TRUE, year = 2020)
     wa_boundary <- sf::st_as_sf(wa_boundary)
-    wa_boundary <- wa_boundary[wa_boundary$STUSPS == "WA", ]
+    wa_boundary <- dplyr::filter(wa_boundary, STUSPS == "WA")
     wa_boundary <- sf::st_transform(wa_boundary, sf::st_crs(shp_joined))
     shp_wa <- sf::st_filter(shp_joined, wa_boundary)
     scatter_label_col <- shp_key
   }
 
-  # Land area column name differs between county and ZCTA shapefiles
-  aland_col <- if (spatial_type == "county") "ALAND" else "ALAND20"
-
-  if (nrow(shp_wa) == 0L || !aland_col %in% names(shp_wa)) {
+  if (nrow(shp_wa) == 0L) {
     gg_scatter <- NULL
   } else {
-    scatter_df <- data.frame(
-      area_m2 = as.numeric(shp_wa[[aland_col]]),
-      value   = shp_wa$value,
-      label   = as.character(shp_wa[[scatter_label_col]]),
-      stringsAsFactors = FALSE
-    )
-    scatter_df <- scatter_df[!is.na(scatter_df$area_m2) & scatter_df$area_m2 > 0, ]
+    scatter_df <- sf::st_drop_geometry(shp_wa) |>
+      dplyr::transmute(
+        n     = n,
+        value = value,
+        label = as.character(.data[[scatter_label_col]])
+      ) |>
+      dplyr::filter(!is.na(n))
 
-    scatter_y_label <- if (is.null(summary_var)) "Count" else
-      paste0(toupper(substring(metric, 1, 1)), substring(metric, 2), " of ", summary_var)
+    scatter_y_label <- if (is.null(summary_var)) {
+      "Count"
+    } else {
+      paste0(
+        toupper(substring(metric, 1, 1)),
+        substring(metric, 2),
+        " of ",
+        summary_var
+      )
+    }
 
-    gg_scatter <- ggplot2::ggplot(scatter_df,
-                                  ggplot2::aes(x = area_m2, y = value, label = label)) +
+    gg_scatter <- ggplot2::ggplot(
+      scatter_df,
+      ggplot2::aes(x = n, y = value, label = label)
+    ) +
       ggplot2::geom_point(alpha = 0.7) +
       ggplot2::geom_text(vjust = -0.5, size = 2.5, check_overlap = TRUE) +
       ggplot2::scale_x_log10(labels = scales::comma) +
       ggplot2::labs(
-        x       = paste0("Land area (m\u00b2, log scale)"),
-        y       = scatter_y_label,
-        title   = paste0(scatter_y_label, " vs area size \u2014 Washington state"),
-        caption = sprintf("Washington state only. %s areas shown.", nrow(scatter_df))
+        x = "Number of observations",
+        y = scatter_y_label,
+        title = paste0(
+          scatter_y_label,
+          " vs observation count \u2014 Washington state"
+        ),
+        caption = sprintf(
+          "Washington state only. %s areas shown.",
+          nrow(scatter_df)
+        )
       ) +
       ggplot2::theme_bw()
   }
@@ -257,14 +291,14 @@ spatial_summary <- function(data,
 
   list(
     outputs = list(
-      map     = gg_map,
+      map = gg_map,
       scatter = gg_scatter
     ),
     exclusions = list(
-      map     = NULL,
+      map = NULL,
       scatter = NULL
     ),
-    .var_name     = .var_name,
+    .var_name = .var_name,
     .summary_type = "spatial_summary"
   )
 }

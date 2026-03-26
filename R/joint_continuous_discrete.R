@@ -5,7 +5,7 @@
 #' trimmed version of the same plot, and a per-level summary table.
 #'
 #' Each histogram panel includes dashed vertical lines at the median (blue) and
-#' mode (red) of the continuous variable within that level, annotated with
+#' mean (red) of the continuous variable within that level, annotated with
 #' their values. The faceted plots are only produced when the discrete variable
 #' has 10 or fewer levels; the recommended export height is increased
 #' automatically when there are 5 or more levels.
@@ -76,9 +76,8 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
     stop(sprintf("'%s' must be numeric.", cont_var))
   }
 
-  # Represent NA levels explicitly
+  # Represent NA levels explicitly; keep NAs as real NA internally
   disc_char <- as.character(disc)
-  disc_char[is.na(disc_char)] <- "NA"
 
   # Remove rows with NA in the continuous variable
   n_cont_na <- sum(is.na(cont))
@@ -90,45 +89,46 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
     ))
   }
   keep <- !is.na(cont)
-  cont <- cont[keep]
+  cont      <- cont[keep]
   disc_char <- disc_char[keep]
 
   # Sorted levels: descending count, NA last
-  level_counts <- sort(table(disc_char), decreasing = TRUE)
-  levels_sorted <- names(level_counts)
-  if ("NA" %in% levels_sorted && tail(levels_sorted, 1) != "NA") {
-    levels_sorted <- c(setdiff(levels_sorted, "NA"), "NA")
+  work_df <- data.frame(cont = cont, disc = disc_char)
+  level_counts  <- dplyr::count(work_df, disc, sort = TRUE)
+  levels_sorted <- level_counts$disc
+  if (anyNA(levels_sorted) && !is.na(tail(levels_sorted, 1))) {
+    levels_sorted <- c(levels_sorted[!is.na(levels_sorted)], NA_character_)
   }
 
   n_levels <- length(levels_sorted)
-  n_total <- length(cont)
+  n_total  <- nrow(work_df)
 
   # --- Per-level stats -------------------------------------------------
-  stats_list <- lapply(levels_sorted, function(lv) {
-    vals <- cont[disc_char == lv]
-    data.frame(
-      level = lv,
-      n = length(vals),
-      pct = length(vals) / n_total * 100,
-      mean_val = mean(vals),
-      median_val = stats::median(vals),
-      mode_val = .mode_val(vals),
-      sd_val = stats::sd(vals),
-      stringsAsFactors = FALSE
-    )
-  })
-  stats_df <- do.call(rbind, stats_list)
+  stats_df <- work_df |>
+    dplyr::group_by(disc) |>
+    dplyr::summarize(
+      n          = dplyr::n(),
+      pct        = dplyr::n() / n_total * 100,
+      mean_val   = mean(cont),
+      median_val = stats::median(cont),
+      sd_val     = stats::sd(cont),
+      .groups    = "drop"
+    ) |>
+    dplyr::rename(level = disc) |>
+    dplyr::mutate(level = addNA(factor(level, levels = levels_sorted[!is.na(levels_sorted)]))) |>
+    dplyr::arrange(level) |>
+    dplyr::mutate(level = as.character(level))
 
   # --- Summary table ---------------------------------------------------
-  tbl_display <- data.frame(
-    level = stats_df$level,
-    n = scales::comma(stats_df$n),
-    pct = paste0(round(stats_df$pct, 1), "%"),
-    mean = round(stats_df$mean_val, 2),
-    median = round(stats_df$median_val, 2),
-    sd = round(stats_df$sd_val, 2),
-    stringsAsFactors = FALSE
-  )
+  tbl_display <- stats_df |>
+    dplyr::transmute(
+      level  = level,
+      n      = scales::comma(n),
+      pct    = paste0(round(pct, 1), "%"),
+      Mean   = round(mean_val, 2),
+      Median = round(median_val, 2),
+      SD     = round(sd_val, 2)
+    )
   names(tbl_display) <- c(disc_var, "n", "%", "Mean", "Median", "SD")
   summary_table <- knitr::kable(
     tbl_display,
@@ -138,49 +138,47 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
 
   # --- Faceted histogram helper ----------------------------------------
   .make_faceted_hist <- function(cont_vals, disc_vals, lvls, caption_text) {
-    stats_sub <- lapply(lvls, function(lv) {
-      vals <- cont_vals[disc_vals == lv]
-      data.frame(
-        level      = lv,
-        median_val = stats::median(vals),
-        mode_val   = .mode_val(vals),
-        stringsAsFactors = FALSE
-      )
-    })
-    stats_sub <- do.call(rbind, stats_sub)
+    inner_df  <- data.frame(cont_val = cont_vals, disc_val = disc_vals)
+    stats_sub <- inner_df |>
+      dplyr::group_by(level = disc_val) |>
+      dplyr::summarize(
+        median_val = stats::median(cont_val),
+        mean_val   = mean(cont_val),
+        .groups    = "drop"
+      ) |>
+      dplyr::mutate(level = addNA(factor(level, levels = lvls[!is.na(lvls)]))) |>
+      dplyr::arrange(level) |>
+      dplyr::mutate(level = as.character(level))
 
-    plot_df <- data.frame(cont_val = cont_vals, stringsAsFactors = FALSE)
-    plot_df[[disc_var]] <- factor(disc_vals, levels = lvls)
+    plot_df <- data.frame(cont_val = cont_vals)
+    plot_df[[disc_var]] <- addNA(factor(disc_vals, levels = lvls[!is.na(lvls)]))
 
     vline_wide <- data.frame(
       median_val = stats_sub$median_val,
-      mode_val   = stats_sub$mode_val,
-      stringsAsFactors = FALSE
+      mean_val   = stats_sub$mean_val
     )
-    vline_wide[[disc_var]] <- factor(stats_sub$level, levels = lvls)
+    vline_wide[[disc_var]] <- addNA(factor(stats_sub$level, levels = lvls[!is.na(lvls)]))
 
-    vline_df <- rbind(
+    vline_df <- dplyr::bind_rows(
       data.frame(
         xintercept = vline_wide$median_val,
         measure    = "Median",
-        vjust_text = 1.4,
-        stringsAsFactors = FALSE
+        vjust_text = 1.4
       ),
       data.frame(
-        xintercept = vline_wide$mode_val,
-        measure    = "Mode",
-        vjust_text = 2.8,
-        stringsAsFactors = FALSE
+        xintercept = vline_wide$mean_val,
+        measure    = "Mean",
+        vjust_text = 2.8
       )
     )
-    vline_df[[disc_var]] <- factor(
+    vline_df[[disc_var]] <- addNA(factor(
       rep(stats_sub$level, times = 2),
-      levels = lvls
-    )
-    vline_df$measure <- factor(vline_df$measure, levels = c("Median", "Mode"))
+      levels = lvls[!is.na(lvls)]
+    ))
+    vline_df$measure <- factor(vline_df$measure, levels = c("Median", "Mean"))
 
-    measure_colours  <- c(Median = "steelblue", Mode = "firebrick")
-    measure_linetypes <- c(Median = "dashed", Mode = "dotted")
+    measure_colours  <- c(Median = "steelblue", Mean = "firebrick")
+    measure_linetypes <- c(Median = "dashed", Mean = "dotted")
 
     ncols <- if (length(lvls) >= 5) 1L else 2L
     disc_var_name_formula <- ifelse(
@@ -283,14 +281,4 @@ joint_continuous_discrete <- function(data, cont_var, disc_var,
     .summary_type = "continuous_discrete_joint",
     .plot_height  = plot_height
   )
-}
-
-# First mode of a numeric/character vector (NA values ignored).
-.mode_val <- function(x) {
-  x <- x[!is.na(x)]
-  if (length(x) == 0L) {
-    return(NA_real_)
-  }
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
 }

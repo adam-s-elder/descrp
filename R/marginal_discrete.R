@@ -52,24 +52,21 @@
 #'
 #' @export
 marginal_discrete <- function(data, var_name) {
-  x <- data[[var_name]]
+  total <- nrow(data)
 
-  total <- length(x)
+  # Count non-NA categories, sorted descending by frequency
+  tbl_non_na <- data |>
+    dplyr::transmute(Category = as.character(.data[[var_name]])) |>
+    dplyr::filter(!is.na(Category)) |>
+    dplyr::count(Category, name = "n") |>
+    dplyr::arrange(dplyr::desc(n)) |>
+    dplyr::mutate(pct = n / total)
 
-  # Build frequency table — always include NA row
-  tbl <- as.data.frame(table(x, useNA = "always"), stringsAsFactors = FALSE)
-  names(tbl) <- c("Category", "n")
-  tbl$Category <- as.character(tbl$Category)
-  tbl$Category[is.na(tbl$Category)] <- "NA"
-  tbl$pct <- tbl$n / total
+  # NA row — always included, kept as real NA internally
+  n_na   <- sum(is.na(data[[var_name]]))
+  na_row <- data.frame(Category = NA_character_, n = n_na, pct = n_na / total)
 
-  # Separate NA row; sort non-NA rows descending by count
-  na_row  <- tbl[tbl$Category == "NA", , drop = FALSE]
-  tbl_non_na <- tbl[tbl$Category != "NA", , drop = FALSE]
-  tbl_non_na <- tbl_non_na[order(-tbl_non_na$n), ]
-
-  # Reassemble with NA row always at the bottom
-  tbl <- rbind(tbl_non_na, na_row)
+  tbl <- dplyr::bind_rows(tbl_non_na, na_row)
 
   md_table <- .format_freq_table(tbl, var_name)
 
@@ -92,7 +89,7 @@ marginal_discrete <- function(data, var_name) {
   }
 
   # --- Collapse algorithm (non-NA categories only) ---
-  tbl_asc <- tbl_non_na[order(tbl_non_na$pct), ]
+  tbl_asc <- dplyr::arrange(tbl_non_na, pct)
 
   # Find maximum K: consecutive categories from smallest that are each < 5%
   k <- 0L
@@ -125,13 +122,12 @@ marginal_discrete <- function(data, var_name) {
   collapsed_row <- data.frame(
     Category = "< 5%",
     n        = sum(small$n),
-    pct      = sum(small$pct),
-    stringsAsFactors = FALSE
+    pct      = sum(small$pct)
   )
 
   # Remaining non-NA categories descending, then collapsed row, then NA row
-  large <- large[order(-large$n), ]
-  tbl_collapsed <- rbind(large, collapsed_row, na_row)
+  large         <- dplyr::arrange(large, dplyr::desc(n))
+  tbl_collapsed <- dplyr::bind_rows(large, collapsed_row, na_row)
 
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 
@@ -150,14 +146,14 @@ marginal_discrete <- function(data, var_name) {
 }
 
 # Internal helper: format a frequency data frame as a markdown kable.
-# Expects columns: Category, n (integer), pct (proportion 0-1).
+# Expects columns: Category (NA = missing), n (integer), pct (proportion 0-1).
 .format_freq_table <- function(tbl, var_name) {
-  display <- data.frame(
-    Category = tbl$Category,
-    n        = scales::comma(tbl$n),
-    pct      = paste0(round(tbl$pct * 100, 1), "%"),
-    stringsAsFactors = FALSE
-  )
+  display <- tbl |>
+    dplyr::transmute(
+      Category = dplyr::if_else(is.na(Category), "NA", Category),
+      n        = scales::comma(n),
+      pct      = paste0(round(pct * 100, 1), "%")
+    )
   names(display) <- c(var_name, "n", "%")
   knitr::kable(display, format = "markdown", row.names = FALSE)
 }

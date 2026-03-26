@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Package Overview
 
-`descrp` is an R package providing utilities for computing and visualizing marginal and joint distributions of continuous and discrete variables during exploratory data analysis. It also supports choropleth maps for spatial variables.
+`descrp` is an R package providing utilities for computing and visualizing marginal and joint distributions of continuous and discrete variables during exploratory data analysis. It also supports choropleth maps for spatial variables. It uses dplyr syntax whenever subsetting and summarizing data. It also follows the tenants of Hadley Whickhams "R packages" book.
 
 ## Common Commands
 
