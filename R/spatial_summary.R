@@ -32,7 +32,9 @@
 #'         Washington state only.
 #'     }
 #'   }
-#'   \item{`exclusions`}{Named list with `map = NULL` and `scatter = NULL`.}
+#'   \item{`exclusions`}{Named list with `map` and `scatter`. For zipcode maps,
+#'     both entries contain a data frame of the excluded zipcodes (those with
+#'     fewer than 10 observations); `NULL` otherwise.}
 #'   \item{`.var_name`}{Character string used for file naming by
 #'     [save_summaries()].}
 #'   \item{`.summary_type`}{`"spatial_summary"`.}
@@ -135,6 +137,14 @@ spatial_summary <- function(
     )
   }
 
+  # --- for zipcodes, drop areas with fewer than 10 observations -----------
+
+  excluded_zipcodes <- NULL
+  if (spatial_type == "zipcode") {
+    excluded_zipcodes <- dplyr::filter(agg_df, n < 10L)
+    agg_df <- dplyr::filter(agg_df, n >= 10L)
+  }
+
   # --- fetch shapefile ----------------------------------------------------
 
   options(tigris_use_cache = TRUE)
@@ -175,24 +185,36 @@ spatial_summary <- function(
 
   n_total <- nrow(data)
   n_areas <- nrow(agg_df)
+  n_excluded_areas <- if (!is.null(excluded_zipcodes)) nrow(excluded_zipcodes) else 0L
+
+  excluded_suffix <- if (n_excluded_areas > 0L) {
+    sprintf(
+      " %s zipcode(s) with fewer than 10 observations excluded.",
+      format(n_excluded_areas, big.mark = ",")
+    )
+  } else {
+    ""
+  }
 
   if (is.null(summary_var)) {
     caption <- sprintf(
-      "%s observations across %s %s(s).",
+      "%s observations across %s %s(s).%s",
       format(n_total, big.mark = ","),
       format(n_areas, big.mark = ","),
-      spatial_type
+      spatial_type,
+      excluded_suffix
     )
     title <- sprintf("Count of observations per %s", spatial_type)
   } else {
     n_missing_sv <- sum(is.na(data[[summary_var]]))
     caption <- sprintf(
-      "%s observations (%s missing %s); %s %s(s) with data.",
+      "%s observations (%s missing %s); %s %s(s) with data.%s",
       format(n_total, big.mark = ","),
       format(n_missing_sv, big.mark = ","),
       summary_var,
       format(n_areas, big.mark = ","),
-      spatial_type
+      spatial_type,
+      excluded_suffix
     )
     title <- sprintf("%s of %s per %s", metric, summary_var, spatial_type)
   }
@@ -302,8 +324,8 @@ spatial_summary <- function(
       scatter = gg_scatter
     ),
     exclusions = list(
-      map = NULL,
-      scatter = NULL
+      map = excluded_zipcodes,
+      scatter = excluded_zipcodes
     ),
     .var_name = .var_name,
     .summary_type = "spatial_summary"
