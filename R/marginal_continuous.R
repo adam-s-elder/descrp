@@ -197,7 +197,7 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
     }
   }
 
-  list(
+  return(list(
     outputs = list(
       hist = hist_plot,
       hist_trimmed = hist_trimmed,
@@ -210,5 +210,5 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
     ),
     .var_name = var_name,
     .summary_type = "continuous_marginal"
-  )
+  ))
 }

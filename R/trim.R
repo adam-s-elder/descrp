@@ -68,10 +68,15 @@ trim_quantile <- function(pct = 0.01) {
   function(x) {
     result <- integer(length(x))
     x_valid <- x[!is.na(x)]
-    if (length(x_valid) > 0L) {
-      low  <- quantile(x_valid, pct,       names = FALSE)
-      high <- quantile(x_valid, 1 - pct,   names = FALSE)
-      result[!is.na(x) & (x < low | x > high)] <- 1L
+    n_valid <- length(x_valid)
+    if (n_valid > 0L) {
+      k <- floor(n_valid * pct)
+      if (k >= 1L && k < n_valid) {
+        sorted_valid <- sort(x_valid)
+        low  <- sorted_valid[k]
+        high <- sorted_valid[n_valid - k + 1L]
+        result[!is.na(x) & (x < low | x > high)] <- 1L
+      }
     }
     result
   }

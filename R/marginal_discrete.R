@@ -19,7 +19,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of `knitr_kable` markdown tables:
+#'   \item{`outputs`}{A named list of data frames:
 #'     \itemize{
 #'       \item `table` — frequency table with columns `Category`,
 #'         `n` (comma-formatted), and `%` (1 decimal place). Rows sorted
@@ -131,7 +131,7 @@ marginal_discrete <- function(data, var_name) {
 
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 
-  list(
+  return(list(
     outputs = list(
       table           = md_table,
       table_collapsed = md_table_collapsed
@@ -142,10 +142,10 @@ marginal_discrete <- function(data, var_name) {
     ),
     .var_name     = var_name,
     .summary_type = "discrete_marginal"
-  )
+  ))
 }
 
-# Internal helper: format a frequency data frame as a markdown kable.
+# Internal helper: format a frequency data frame for display.
 # Expects columns: Category (NA = missing), n (integer), pct (proportion 0-1).
 .format_freq_table <- function(tbl, var_name) {
   display <- tbl |>

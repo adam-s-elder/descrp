@@ -46,8 +46,9 @@ test_that("trim_quantile trims by quantile", {
   out <- marginal_continuous(df, "x", trim = trim_quantile(0.05))
   expect_s3_class(out$outputs$hist_trimmed, "ggplot")
   expect_false(is.null(out$exclusions$hist_trimmed))
-  # Bottom 5% of 200 = 10 values, top 5% = 10 values
-  expect_length(out$exclusions$hist_trimmed, 20)
+  # Boundary values at positions k and n-k+1 are kept; k = floor(200*0.05) = 10
+  # so 9 trimmed from each tail = 18 total
+  expect_length(out$exclusions$hist_trimmed, 18)
 })
 
 test_that("hist_trimmed is NULL with a message when trimming removes all", {

@@ -17,7 +17,7 @@ their own category. The \code{NA} row is never collapsed into \code{"< 5\%"}.}
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{outputs}}{A named list of \code{knitr_kable} markdown tables:
+\item{\code{outputs}}{A named list of data frames:
 \itemize{
 \item \code{table} — frequency table with columns \code{Category},
 \code{n} (comma-formatted), and \verb{\%} (1 decimal place). Rows sorted

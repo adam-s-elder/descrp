@@ -108,7 +108,7 @@ joint_continuous_continuous <- function(data, var1, var2,
     }
   }
 
-  list(
+  return(list(
     outputs = list(
       scatter         = scatter,
       scatter_trimmed = scatter_trimmed
@@ -119,5 +119,5 @@ joint_continuous_continuous <- function(data, var1, var2,
     ),
     .var_name     = paste(var1, var2, sep = "_"),
     .summary_type = "continuous_continuous_joint"
-  )
+  ))
 }

@@ -318,7 +318,7 @@ spatial_summary <- function(
     .var_name <- paste0(spatial_var, "_", summary_var)
   }
 
-  list(
+  return(list(
     outputs = list(
       map = gg_map,
       scatter = gg_scatter
@@ -329,5 +329,5 @@ spatial_summary <- function(
     ),
     .var_name = .var_name,
     .summary_type = "spatial_summary"
-  )
+  ))
 }

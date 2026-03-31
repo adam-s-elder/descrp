@@ -30,9 +30,9 @@ panel per level of \code{disc_var}. \code{NULL} when \code{disc_var} has more th
 \item \code{hist_faceted_trimmed} — faceted histogram on the trimmed
 continuous values. \code{NULL} when \code{trim} is \code{NULL}, \code{disc_var} has
 more than 10 levels, or trimming removes all observations.
-\item \code{summary_table} — \code{knitr_kable} markdown table with columns for
-level, n, \%, mean, median, and SD of \code{cont_var}. Sorted descending
-by count with the \code{NA} level last.
+\item \code{summary_table} — data frame with columns for level, n, \%,
+mean, median, and SD of \code{cont_var}. Sorted descending by count with
+the \code{NA} level last.
 }
 }
 \item{\code{exclusions}}{Named list:

@@ -31,7 +31,8 @@ more summary lists (as returned by any descrp summary function) to files in
 summary, e.g. \code{score_marginal_hist.png} or \code{group_table_collapsed.md}.
 }
 \details{
-ggplot2 objects are saved as PNG; \code{knitr_kable} tables are saved as \code{.md}.
+ggplot2 objects are saved as PNG; data frame tables are converted to markdown
+via \code{knitr::kable()} and saved as \code{.md}.
 \code{NULL} outputs are silently skipped.
 }
 \examples{

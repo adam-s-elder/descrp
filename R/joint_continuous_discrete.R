@@ -33,9 +33,9 @@
 #'       \item `hist_faceted_trimmed` — faceted histogram on the trimmed
 #'         continuous values. `NULL` when `trim` is `NULL`, `disc_var` has
 #'         more than 10 levels, or trimming removes all observations.
-#'       \item `summary_table` — `knitr_kable` markdown table with columns for
-#'         level, n, %, mean, median, and SD of `cont_var`. Sorted descending
-#'         by count with the `NA` level last.
+#'       \item `summary_table` — data frame with columns for level, n, %,
+#'         mean, median, and SD of `cont_var`. Sorted descending by count with
+#'         the `NA` level last.
 #'     }
 #'   }
 #'   \item{`exclusions`}{Named list:
@@ -139,11 +139,7 @@ joint_continuous_discrete <- function(
       SD = round(sd_val, 2)
     )
   names(tbl_display) <- c(disc_var, "n", "%", "Mean", "Median", "SD")
-  summary_table <- knitr::kable(
-    tbl_display,
-    format = "markdown",
-    row.names = FALSE
-  )
+  summary_table <- tbl_display
 
   # --- Faceted histogram helper ----------------------------------------
   .make_faceted_hist <- function(cont_vals, disc_vals, lvls, caption_text) {
@@ -294,7 +290,7 @@ joint_continuous_discrete <- function(
     }
   }
 
-  list(
+  return(list(
     outputs = list(
       hist_faceted = hist_faceted,
       hist_faceted_trimmed = hist_faceted_trimmed,
@@ -308,5 +304,5 @@ joint_continuous_discrete <- function(
     .var_name = paste(cont_var, disc_var, sep = "_"),
     .summary_type = "continuous_discrete_joint",
     .plot_height = plot_height
-  )
+  ))
 }

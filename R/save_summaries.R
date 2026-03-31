@@ -5,7 +5,8 @@
 #' `output_dir`. File names encode both the variable name(s) and the kind of
 #' summary, e.g. `score_marginal_hist.png` or `group_table_collapsed.md`.
 #'
-#' ggplot2 objects are saved as PNG; `knitr_kable` tables are saved as `.md`.
+#' ggplot2 objects are saved as PNG; data frame tables are converted to markdown
+#' via `knitr::kable()` and saved as `.md`.
 #' `NULL` outputs are silently skipped.
 #'
 #' @param summaries A single summary list returned by a descrp function, **or**
@@ -158,7 +159,7 @@ save_summaries <- function(
   saved
 }
 
-# Save a named list of kable objects as .md files; return paths written.
+# Save a named list of data frame tables as .md files; return paths written.
 .save_tables <- function(tables, stem, output_dir) {
   saved <- character(0)
   for (key in names(tables)) {

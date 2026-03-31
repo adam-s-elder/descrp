@@ -11,7 +11,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of `knitr_kable` markdown tables:
+#'   \item{`outputs`}{A named list of data frames:
 #'     \itemize{
 #'       \item `crosstab` — `var1` levels as rows, `var2` levels as columns,
 #'         with a Total row and column. Each cell shows `count (row%)`.
@@ -43,7 +43,7 @@ joint_discrete_discrete <- function(data, var1, var2) {
   x1[is.na(x1)] <- "NA"
   x2[is.na(x2)] <- "NA"
 
-  list(
+  return(list(
     outputs = list(
       crosstab            = .make_crosstab(x1, x2, var1, var2),
       crosstab_transposed = .make_crosstab(x2, x1, var2, var1)
@@ -54,10 +54,10 @@ joint_discrete_discrete <- function(data, var1, var2) {
     ),
     .var_name     = paste(var1, var2, sep = "_"),
     .summary_type = "discrete_discrete_joint"
-  )
+  ))
 }
 
-# Build a kable cross-tab: rows = row_vals levels, cols = col_vals levels.
+# Build a cross-tab data frame: rows = row_vals levels, cols = col_vals levels.
 # Each interior cell: "count (row%)". Totals row and column show counts only.
 .make_crosstab <- function(row_vals, col_vals, row_var, col_var) {
   tab     <- table(row_vals, col_vals)
@@ -90,5 +90,5 @@ joint_discrete_discrete <- function(data, var1, var2) {
   # Rename column header over the col_var levels
   names(df_out)[-1L] <- c(colnames(tab), "Total")
 
-  knitr::kable(df_out, format = "markdown", row.names = FALSE)
+  return(df_out)
 }

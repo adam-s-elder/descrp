@@ -16,7 +16,7 @@ joint_discrete_discrete(data, var1, var2)
 \value{
 A named list with the following elements:
 \describe{
-\item{\code{outputs}}{A named list of \code{knitr_kable} markdown tables:
+\item{\code{outputs}}{A named list of data frames:
 \itemize{
 \item \code{crosstab} — \code{var1} levels as rows, \code{var2} levels as columns,
 with a Total row and column. Each cell shows \verb{count (row\%)}.

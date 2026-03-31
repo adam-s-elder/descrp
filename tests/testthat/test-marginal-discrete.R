@@ -72,7 +72,7 @@ test_that("NA row is never collapsed into '< 5%'", {
   x <- c(sample(letters, 500, replace = TRUE), rep(NA, 5))
   out <- marginal_discrete(data.frame(x = x), "x")
   tbl_text <- paste(out$outputs$table_collapsed, collapse = "\n")
-  expect_match(tbl_text, "\\| NA ")
+  expect_match(tbl_text, "\\|\\s*NA\\s")
 })
 
 test_that("var_name is used as the category column header", {

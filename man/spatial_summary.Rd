@@ -41,7 +41,9 @@ observations (x), labelled by county name or ZIP code, filtered to
 Washington state only.
 }
 }
-\item{\code{exclusions}}{Named list with \code{map = NULL} and \code{scatter = NULL}.}
+\item{\code{exclusions}}{Named list with \code{map} and \code{scatter}. For zipcode maps,
+both entries contain a data frame of the excluded zipcodes (those with
+fewer than 10 observations); \code{NULL} otherwise.}
 \item{\code{.var_name}}{Character string used for file naming by
 \code{\link[=save_summaries]{save_summaries()}}.}
 \item{\code{.summary_type}}{\code{"spatial_summary"}.}
