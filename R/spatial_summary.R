@@ -223,9 +223,9 @@ spatial_summary <- function(
 
   gg_map <- ggplot2::ggplot(shp_joined) +
     ggplot2::geom_sf(ggplot2::aes(fill = value), colour = NA) +
-    ggplot2::scale_fill_viridis_c(
-      name = fill_label,
-      option = "plasma"
+    ggplot2::scale_fill_continuous(
+      palette = viridis::plasma(100, begin = 0, end = 0.75),
+      name = fill_label
     ) +
     ggplot2::labs(title = title, caption = caption) +
     ggplot2::theme_void() +
