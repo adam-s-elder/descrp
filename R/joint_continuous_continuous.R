@@ -16,7 +16,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of [ggplot2::ggplot()] objects:
+#'   \item{`output`}{A named list of [ggplot2::ggplot()] objects:
 #'     \itemize{
 #'       \item `scatter` — scatter plot of all complete observations with a
 #'         linear line of best fit. Caption reports rows excluded due to
@@ -25,7 +25,7 @@
 #'         `trim` is `NULL` or trimming removes all observations.
 #'     }
 #'   }
-#'   \item{`exclusions`}{A named list mirroring `outputs`:
+#'   \item{`excludes`}{A named list mirroring `output`:
 #'     \itemize{
 #'       \item `scatter` — `NULL`.
 #'       \item `scatter_trimmed` — data frame of excluded rows (columns named
@@ -33,16 +33,22 @@
 #'         `NULL`.
 #'     }
 #'   }
-#'   \item{`.var_name`}{Combined variable name used for file naming by
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{Character `"continuous_continuous_joint"`.}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Combined variable name used for file naming
+#'         by [save_summaries()].
+#'       \item `summary_type` — Character `"continuous_continuous_joint"`.
+#'       \item `covariate` — Character. The first variable (`var1`).
+#'       \item `outcome` — Character. The second variable (`var2`).
+#'     }
+#'   }
 #' }
 #'
 #' @examples
 #' df <- data.frame(x = rnorm(200), y = rnorm(200))
 #' out <- joint_continuous_continuous(df, "x", "y")
-#' out$outputs$scatter
-#' out$outputs$scatter_trimmed
+#' out$output$scatter
+#' out$output$scatter_trimmed
 #'
 #' # No trimming
 #' out2 <- joint_continuous_continuous(df, "x", "y", trim = NULL)
@@ -109,15 +115,19 @@ joint_continuous_continuous <- function(data, var1, var2,
   }
 
   return(list(
-    outputs = list(
+    output = list(
       scatter         = scatter,
       scatter_trimmed = scatter_trimmed
     ),
-    exclusions = list(
+    excludes = list(
       scatter         = NULL,
       scatter_trimmed = scatter_trimmed_excl
     ),
-    .var_name     = paste(var1, var2, sep = "_"),
-    .summary_type = "continuous_continuous_joint"
+    info = list(
+      file_save_path = paste(var1, var2, sep = "_"),
+      summary_type   = "continuous_continuous_joint",
+      covariate      = var1,
+      outcome        = var2
+    )
   ))
 }

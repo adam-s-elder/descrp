@@ -1,6 +1,6 @@
 #' Save all summary objects produced by descrp functions
 #'
-#' Writes every non-`NULL` plot or table from the `outputs` element of one or
+#' Writes every non-`NULL` plot or table from the `output` element of one or
 #' more summary lists (as returned by any descrp summary function) to files in
 #' `output_dir`. File names encode both the variable name(s) and the kind of
 #' summary, e.g. `score_marginal_hist.png` or `group_table_collapsed.md`.
@@ -16,7 +16,7 @@
 #' @param width,height Numeric. Width and height in inches passed to
 #'   [ggplot2::ggsave()] for PNG files. Defaults: `8` and `6`. For
 #'   `continuous_discrete_joint` summaries the height is overridden by the
-#'   `.plot_height` field embedded in the summary object when it is larger than
+#'   `info$plot_height` field embedded in the summary object when it is larger than
 #'   `height`.
 #' @param dpi Numeric. Resolution passed to [ggplot2::ggsave()]. Default `150`.
 #'
@@ -48,7 +48,7 @@ save_summaries <- function(
   dpi = 150
 ) {
   # Accept a single summary object as well as a list of them
-  if (!is.null(summaries$.summary_type)) {
+  if (!is.null(summaries$info)) {
     summaries <- list(summaries)
   }
 
@@ -60,21 +60,21 @@ save_summaries <- function(
   saved <- character(0)
 
   for (s in summaries) {
-    type <- s$.summary_type
+    type <- s$info$summary_type
     if (is.null(type)) {
       warning(
-        "Skipping a list element with no `.summary_type`; was it produced by a descrp function?"
+        "Skipping a list element with no `info$summary_type`; was it produced by a descrp function?"
       )
       next
     }
 
-    stem <- .sanitize_name(s$.var_name)
+    stem <- .sanitize_name(s$info$file_save_path)
 
     if (type == "continuous_marginal") {
       plots <- list(
-        marginal_hist = s$outputs$hist,
-        marginal_hist_trimmed = s$outputs$hist_trimmed,
-        marginal_hist_log = s$outputs$hist_log
+        marginal_hist = s$output$hist,
+        marginal_hist_trimmed = s$output$hist_trimmed,
+        marginal_hist_log = s$output$hist_log
       )
       saved <- c(
         saved,
@@ -82,14 +82,14 @@ save_summaries <- function(
       )
     } else if (type == "discrete_marginal") {
       tables <- list(
-        table = s$outputs$table,
-        table_collapsed = s$outputs$table_collapsed
+        table = s$output$table,
+        table_collapsed = s$output$table_collapsed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "continuous_continuous_joint") {
       plots <- list(
-        scatter = s$outputs$scatter,
-        scatter_trimmed = s$outputs$scatter_trimmed
+        scatter = s$output$scatter,
+        scatter_trimmed = s$output$scatter_trimmed
       )
       saved <- c(
         saved,
@@ -97,31 +97,31 @@ save_summaries <- function(
       )
     } else if (type == "continuous_discrete_joint") {
       # Use embedded recommended height when it exceeds the caller's default
-      h <- max(height, s$.plot_height %||% height)
+      h <- max(height, s$info$plot_height %||% height)
       plots <- list(
-        hist_faceted = s$outputs$hist_faceted,
-        hist_faceted_trimmed = s$outputs$hist_faceted_trimmed
+        hist_faceted = s$output$hist_faceted,
+        hist_faceted_trimmed = s$output$hist_faceted_trimmed
       )
       saved <- c(saved, .save_plots(plots, stem, output_dir, width, h, dpi))
-      tables <- list(summary_table = s$outputs$summary_table)
+      tables <- list(summary_table = s$output$summary_table)
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "discrete_discrete_joint") {
       tables <- list(
-        crosstab = s$outputs$crosstab,
-        crosstab_transposed = s$outputs$crosstab_transposed
+        crosstab = s$output$crosstab,
+        crosstab_transposed = s$output$crosstab_transposed
       )
       saved <- c(saved, .save_tables(tables, stem, output_dir))
     } else if (type == "spatial_summary") {
       plots <- list(
-        map = s$outputs$map,
-        scatter = s$outputs$scatter
+        map = s$output$map,
+        scatter = s$output$scatter
       )
       saved <- c(
         saved,
         .save_plots(plots, stem, output_dir, width, height, dpi)
       )
     } else {
-      warning(sprintf("Unknown `.summary_type` '%s'; skipping.", type))
+      warning(sprintf("Unknown `info$summary_type` '%s'; skipping.", type))
     }
   }
 

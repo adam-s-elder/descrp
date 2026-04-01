@@ -16,7 +16,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of [ggplot2::ggplot()] objects:
+#'   \item{`output`}{A named list of [ggplot2::ggplot()] objects:
 #'     \itemize{
 #'       \item `hist` — histogram of all non-missing observations.
 #'       \item `hist_trimmed` — histogram after trimming. `NULL` when `trim`
@@ -25,7 +25,7 @@
 #'         values. `NULL` for date columns or when no positive values exist.
 #'     }
 #'   }
-#'   \item{`exclusions`}{A named list mirroring `outputs`:
+#'   \item{`excludes`}{A named list mirroring `output`:
 #'     \itemize{
 #'       \item `hist` — `NULL` (no observations excluded).
 #'       \item `hist_trimmed` — numeric vector of excluded values, or `NULL`
@@ -33,16 +33,22 @@
 #'       \item `hist_log` — `NULL`.
 #'     }
 #'   }
-#'   \item{`.var_name`}{Character. The variable name used for file naming in
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{Character `"continuous_marginal"`.}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Character. Variable name used for file naming
+#'         in [save_summaries()].
+#'       \item `summary_type` — Character `"continuous_marginal"`.
+#'       \item `covariate` — Character. The variable name (`var_name`).
+#'       \item `outcome` — `NULL` (marginal summary has no outcome variable).
+#'     }
+#'   }
 #' }
 #'
 #' @examples
 #' df <- data.frame(score = rnorm(200))
 #' out <- marginal_continuous(df, "score")
-#' out$outputs$hist
-#' out$outputs$hist_trimmed
+#' out$output$hist
+#' out$output$hist_trimmed
 #'
 #' # No trimming
 #' out2 <- marginal_continuous(df, "score", trim = NULL)
@@ -198,17 +204,21 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
   }
 
   return(list(
-    outputs = list(
+    output = list(
       hist = hist_plot,
       hist_trimmed = hist_trimmed,
       hist_log = hist_log
     ),
-    exclusions = list(
+    excludes = list(
       hist = NULL,
       hist_trimmed = hist_trimmed_excl,
       hist_log = NULL
     ),
-    .var_name = var_name,
-    .summary_type = "continuous_marginal"
+    info = list(
+      file_save_path = var_name,
+      summary_type   = "continuous_marginal",
+      covariate      = var_name,
+      outcome        = NULL
+    )
   ))
 }

@@ -11,7 +11,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of data frames:
+#'   \item{`output`}{A named list of data frames:
 #'     \itemize{
 #'       \item `crosstab` — `var1` levels as rows, `var2` levels as columns,
 #'         with a Total row and column. Each cell shows `count (row%)`.
@@ -19,11 +19,17 @@
 #'         `var1` as columns.
 #'     }
 #'   }
-#'   \item{`exclusions`}{Named list with `crosstab = NULL` and
+#'   \item{`excludes`}{Named list with `crosstab = NULL` and
 #'     `crosstab_transposed = NULL` (no observations are excluded).}
-#'   \item{`.var_name`}{Combined variable name for file naming by
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{Character `"discrete_discrete_joint"`.}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Combined variable name for file naming by
+#'         [save_summaries()].
+#'       \item `summary_type` — Character `"discrete_discrete_joint"`.
+#'       \item `covariate` — Character. The first variable (`var1`).
+#'       \item `outcome` — Character. The second variable (`var2`).
+#'     }
+#'   }
 #' }
 #'
 #' @examples
@@ -32,8 +38,8 @@
 #'   status = sample(c("Active", "Inactive", "Unknown"), 200, replace = TRUE)
 #' )
 #' out <- joint_discrete_discrete(df, "sex", "status")
-#' out$outputs$crosstab
-#' out$outputs$crosstab_transposed
+#' out$output$crosstab
+#' out$output$crosstab_transposed
 #'
 #' @export
 joint_discrete_discrete <- function(data, var1, var2) {
@@ -44,16 +50,20 @@ joint_discrete_discrete <- function(data, var1, var2) {
   x2[is.na(x2)] <- "NA"
 
   return(list(
-    outputs = list(
+    output = list(
       crosstab            = .make_crosstab(x1, x2, var1, var2),
       crosstab_transposed = .make_crosstab(x2, x1, var2, var1)
     ),
-    exclusions = list(
+    excludes = list(
       crosstab            = NULL,
       crosstab_transposed = NULL
     ),
-    .var_name     = paste(var1, var2, sep = "_"),
-    .summary_type = "discrete_discrete_joint"
+    info = list(
+      file_save_path = paste(var1, var2, sep = "_"),
+      summary_type   = "discrete_discrete_joint",
+      covariate      = var1,
+      outcome        = var2
+    )
   ))
 }
 

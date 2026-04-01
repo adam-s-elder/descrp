@@ -19,7 +19,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list of data frames:
+#'   \item{`output`}{A named list of data frames:
 #'     \itemize{
 #'       \item `table` — frequency table with columns `Category`,
 #'         `n` (comma-formatted), and `%` (1 decimal place). Rows sorted
@@ -29,26 +29,31 @@
 #'         or when no category individually falls below 5%.
 #'     }
 #'   }
-#'   \item{`exclusions`}{Named list with `table = NULL` and
+#'   \item{`excludes`}{Named list with `table = NULL` and
 #'     `table_collapsed = NULL` (no observations are excluded).}
-#'   \item{`.var_name`}{Character. The variable name used for file naming in
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{Character `"discrete_marginal"`. Used by
-#'     [save_summaries()] to dispatch saving logic.}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Character. Variable name used for file naming
+#'         in [save_summaries()].
+#'       \item `summary_type` — Character `"discrete_marginal"`.
+#'       \item `covariate` — Character. The variable name (`var_name`).
+#'       \item `outcome` — `NULL` (marginal summary has no outcome variable).
+#'     }
+#'   }
 #' }
 #'
 #' @examples
 #' # Few categories — no collapsed table
 #' df <- data.frame(letter = sample(letters[1:5], 100, replace = TRUE))
 #' out <- marginal_discrete(df, "letter")
-#' out$outputs$table
-#' out$outputs$table_collapsed  # NULL
+#' out$output$table
+#' out$output$table_collapsed  # NULL
 #'
 #' # Many categories — collapsed table produced
 #' df2 <- data.frame(letter = sample(letters, 500, replace = TRUE))
 #' out2 <- marginal_discrete(df2, "letter")
-#' out2$outputs$table
-#' out2$outputs$table_collapsed
+#' out2$output$table
+#' out2$output$table_collapsed
 #'
 #' @export
 marginal_discrete <- function(data, var_name) {
@@ -75,16 +80,20 @@ marginal_discrete <- function(data, var_name) {
 
   if (n_cats <= 10) {
     return(list(
-      outputs = list(
+      output = list(
         table           = md_table,
         table_collapsed = NULL
       ),
-      exclusions = list(
+      excludes = list(
         table           = NULL,
         table_collapsed = NULL
       ),
-      .var_name     = var_name,
-      .summary_type = "discrete_marginal"
+      info = list(
+        file_save_path = var_name,
+        summary_type   = "discrete_marginal",
+        covariate      = var_name,
+        outcome        = NULL
+      )
     ))
   }
 
@@ -103,16 +112,20 @@ marginal_discrete <- function(data, var_name) {
 
   if (k == 0L) {
     return(list(
-      outputs = list(
+      output = list(
         table           = md_table,
         table_collapsed = NULL
       ),
-      exclusions = list(
+      excludes = list(
         table           = NULL,
         table_collapsed = NULL
       ),
-      .var_name     = var_name,
-      .summary_type = "discrete_marginal"
+      info = list(
+        file_save_path = var_name,
+        summary_type   = "discrete_marginal",
+        covariate      = var_name,
+        outcome        = NULL
+      )
     ))
   }
 
@@ -132,16 +145,20 @@ marginal_discrete <- function(data, var_name) {
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 
   return(list(
-    outputs = list(
+    output = list(
       table           = md_table,
       table_collapsed = md_table_collapsed
     ),
-    exclusions = list(
+    excludes = list(
       table           = NULL,
       table_collapsed = NULL
     ),
-    .var_name     = var_name,
-    .summary_type = "discrete_marginal"
+    info = list(
+      file_save_path = var_name,
+      summary_type   = "discrete_marginal",
+      covariate      = var_name,
+      outcome        = NULL
+    )
   ))
 }
 

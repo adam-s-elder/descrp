@@ -23,7 +23,7 @@
 #'
 #' @return A named list with:
 #' \describe{
-#'   \item{`outputs`}{A named list:
+#'   \item{`output`}{A named list:
 #'     \itemize{
 #'       \item `map` — ggplot2 choropleth. For county maps, each county is
 #'         labelled with its value (3 significant figures).
@@ -32,12 +32,19 @@
 #'         Washington state only.
 #'     }
 #'   }
-#'   \item{`exclusions`}{Named list with `map` and `scatter`. For zipcode maps,
+#'   \item{`excludes`}{Named list with `map` and `scatter`. For zipcode maps,
 #'     both entries contain a data frame of the excluded zipcodes (those with
 #'     fewer than 10 observations); `NULL` otherwise.}
-#'   \item{`.var_name`}{Character string used for file naming by
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{`"spatial_summary"`.}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Character string used for file naming by
+#'         [save_summaries()].
+#'       \item `summary_type` — `"spatial_summary"`.
+#'       \item `covariate` — Character. The spatial variable (`spatial_var`).
+#'       \item `outcome` — Character or `NULL`. The summary variable
+#'         (`summary_var`), or `NULL` when mapping observation counts.
+#'     }
+#'   }
 #' }
 #'
 #' @examples
@@ -48,13 +55,13 @@
 #' )
 #' # Count map
 #' out1 <- spatial_summary(df, "fips", spatial_type = "county")
-#' out1$outputs$map
+#' out1$output$map
 #'
 #' # Mean income map
 #' out2 <- spatial_summary(df, "fips", summary_var = "income",
 #'                         spatial_type = "county", metric = "mean")
-#' out2$outputs$map
-#' out2$outputs$scatter
+#' out2$output$map
+#' out2$output$scatter
 #' }
 #'
 #' @export
@@ -310,24 +317,28 @@ spatial_summary <- function(
       ggplot2::theme(legend.position = "bottom")
   }
 
-  # --- build .var_name ----------------------------------------------------
+  # --- build file_save_path -----------------------------------------------
 
   if (is.null(summary_var)) {
-    .var_name <- spatial_var
+    file_save_path <- spatial_var
   } else {
-    .var_name <- paste0(spatial_var, "_", summary_var)
+    file_save_path <- paste0(spatial_var, "_", summary_var)
   }
 
   return(list(
-    outputs = list(
+    output = list(
       map = gg_map,
       scatter = gg_scatter
     ),
-    exclusions = list(
+    excludes = list(
       map = excluded_zipcodes,
       scatter = excluded_zipcodes
     ),
-    .var_name = .var_name,
-    .summary_type = "spatial_summary"
+    info = list(
+      file_save_path = file_save_path,
+      summary_type   = "spatial_summary",
+      covariate      = spatial_var,
+      outcome        = summary_var
+    )
   ))
 }

@@ -25,7 +25,7 @@
 #'
 #' @return A named list with the following elements:
 #' \describe{
-#'   \item{`outputs`}{A named list:
+#'   \item{`output`}{A named list:
 #'     \itemize{
 #'       \item `hist_faceted` — [ggplot2::ggplot()] faceted histogram, one
 #'         panel per level of `disc_var`. `NULL` when `disc_var` has more than
@@ -38,7 +38,7 @@
 #'         the `NA` level last.
 #'     }
 #'   }
-#'   \item{`exclusions`}{Named list:
+#'   \item{`excludes`}{Named list:
 #'     \itemize{
 #'       \item `hist_faceted` — `NULL`.
 #'       \item `hist_faceted_trimmed` — data frame of excluded rows (columns
@@ -47,11 +47,17 @@
 #'       \item `summary_table` — `NULL`.
 #'     }
 #'   }
-#'   \item{`.var_name`}{Combined variable name for file naming by
-#'     [save_summaries()].}
-#'   \item{`.summary_type`}{Character `"continuous_discrete_joint"`.}
-#'   \item{`.plot_height`}{Recommended export height in inches for
-#'     `hist_faceted`. Used by [save_summaries()].}
+#'   \item{`info`}{A named list of metadata:
+#'     \itemize{
+#'       \item `file_save_path` — Combined variable name for file naming by
+#'         [save_summaries()].
+#'       \item `summary_type` — Character `"continuous_discrete_joint"`.
+#'       \item `covariate` — Character. The continuous variable (`cont_var`).
+#'       \item `outcome` — Character. The discrete variable (`disc_var`).
+#'       \item `plot_height` — Recommended export height in inches for
+#'         `hist_faceted`. Used by [save_summaries()].
+#'     }
+#'   }
 #' }
 #'
 #' @examples
@@ -60,8 +66,8 @@
 #'   group = sample(c("A", "B", "C"), 300, replace = TRUE)
 #' )
 #' out <- joint_continuous_discrete(df, "score", "group")
-#' out$outputs$hist_faceted
-#' out$outputs$summary_table
+#' out$output$hist_faceted
+#' out$output$summary_table
 #'
 #' # No trimming
 #' out2 <- joint_continuous_discrete(df, "score", "group", trim = NULL)
@@ -291,18 +297,22 @@ joint_continuous_discrete <- function(
   }
 
   return(list(
-    outputs = list(
+    output = list(
       hist_faceted = hist_faceted,
       hist_faceted_trimmed = hist_faceted_trimmed,
       summary_table = summary_table
     ),
-    exclusions = list(
+    excludes = list(
       hist_faceted = NULL,
       hist_faceted_trimmed = hist_faceted_trimmed_excl,
       summary_table = NULL
     ),
-    .var_name = paste(cont_var, disc_var, sep = "_"),
-    .summary_type = "continuous_discrete_joint",
-    .plot_height = plot_height
+    info = list(
+      file_save_path = paste(cont_var, disc_var, sep = "_"),
+      summary_type   = "continuous_discrete_joint",
+      covariate      = cont_var,
+      outcome        = disc_var,
+      plot_height    = plot_height
+    )
   ))
 }
