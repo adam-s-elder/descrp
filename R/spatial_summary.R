@@ -325,20 +325,22 @@ spatial_summary <- function(
     file_save_path <- paste0(spatial_var, "_", summary_var)
   }
 
+  info <- list(
+    file_save_path = file_save_path,
+    summary_type   = "spatial_summary",
+    covariate      = spatial_var,
+    outcome        = summary_var
+  )
   return(list(
-    output = list(
-      map = gg_map,
-      scatter = gg_scatter
+    map = list(
+      output  = gg_map,
+      exclude = excluded_zipcodes,
+      info    = info
     ),
-    excludes = list(
-      map = excluded_zipcodes,
-      scatter = excluded_zipcodes
-    ),
-    info = list(
-      file_save_path = file_save_path,
-      summary_type   = "spatial_summary",
-      covariate      = spatial_var,
-      outcome        = summary_var
+    scatter = list(
+      output  = gg_scatter,
+      exclude = excluded_zipcodes,
+      info    = info
     )
   ))
 }

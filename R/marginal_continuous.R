@@ -203,22 +203,27 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
     }
   }
 
+  info <- list(
+    file_save_path = var_name,
+    summary_type   = "continuous_marginal",
+    covariate      = var_name,
+    outcome        = NULL
+  )
   return(list(
-    output = list(
-      hist = hist_plot,
-      hist_trimmed = hist_trimmed,
-      hist_log = hist_log
+    hist = list(
+      output  = hist_plot,
+      exclude = NULL,
+      info    = info
     ),
-    excludes = list(
-      hist = NULL,
-      hist_trimmed = hist_trimmed_excl,
-      hist_log = NULL
+    hist_trimmed = list(
+      output  = hist_trimmed,
+      exclude = hist_trimmed_excl,
+      info    = info
     ),
-    info = list(
-      file_save_path = var_name,
-      summary_type   = "continuous_marginal",
-      covariate      = var_name,
-      outcome        = NULL
+    hist_log = list(
+      output  = hist_log,
+      exclude = NULL,
+      info    = info
     )
   ))
 }

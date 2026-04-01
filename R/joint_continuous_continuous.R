@@ -114,20 +114,22 @@ joint_continuous_continuous <- function(data, var1, var2,
     }
   }
 
+  info <- list(
+    file_save_path = paste(var1, var2, sep = "_"),
+    summary_type   = "continuous_continuous_joint",
+    covariate      = var1,
+    outcome        = var2
+  )
   return(list(
-    output = list(
-      scatter         = scatter,
-      scatter_trimmed = scatter_trimmed
+    scatter = list(
+      output  = scatter,
+      exclude = NULL,
+      info    = info
     ),
-    excludes = list(
-      scatter         = NULL,
-      scatter_trimmed = scatter_trimmed_excl
-    ),
-    info = list(
-      file_save_path = paste(var1, var2, sep = "_"),
-      summary_type   = "continuous_continuous_joint",
-      covariate      = var1,
-      outcome        = var2
+    scatter_trimmed = list(
+      output  = scatter_trimmed,
+      exclude = scatter_trimmed_excl,
+      info    = info
     )
   ))
 }

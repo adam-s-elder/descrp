@@ -47,8 +47,9 @@ save_summaries <- function(
   height = 6,
   dpi = 150
 ) {
-  # Accept a single summary object as well as a list of them
-  if (!is.null(summaries$info)) {
+  # Accept a single summary object as well as a list of them.
+  # A single summary's top-level elements each contain $output.
+  if ("output" %in% names(summaries[[1]])) {
     summaries <- list(summaries)
   }
 
@@ -60,68 +61,29 @@ save_summaries <- function(
   saved <- character(0)
 
   for (s in summaries) {
-    type <- s$info$summary_type
-    if (is.null(type)) {
+    if (is.null(s[[1]]$info$summary_type)) {
       warning(
         "Skipping a list element with no `info$summary_type`; was it produced by a descrp function?"
       )
       next
     }
 
-    stem <- .sanitize_name(s$info$file_save_path)
+    for (nm in names(s)) {
+      entry <- s[[nm]]
+      if (is.null(entry$output)) next
 
-    if (type == "continuous_marginal") {
-      plots <- list(
-        marginal_hist = s$output$hist,
-        marginal_hist_trimmed = s$output$hist_trimmed,
-        marginal_hist_log = s$output$hist_log
-      )
-      saved <- c(
-        saved,
-        .save_plots(plots, stem, output_dir, width, height, dpi)
-      )
-    } else if (type == "discrete_marginal") {
-      tables <- list(
-        table = s$output$table,
-        table_collapsed = s$output$table_collapsed
-      )
-      saved <- c(saved, .save_tables(tables, stem, output_dir))
-    } else if (type == "continuous_continuous_joint") {
-      plots <- list(
-        scatter = s$output$scatter,
-        scatter_trimmed = s$output$scatter_trimmed
-      )
-      saved <- c(
-        saved,
-        .save_plots(plots, stem, output_dir, width, height, dpi)
-      )
-    } else if (type == "continuous_discrete_joint") {
-      # Use embedded recommended height when it exceeds the caller's default
-      h <- max(height, s$info$plot_height %||% height)
-      plots <- list(
-        hist_faceted = s$output$hist_faceted,
-        hist_faceted_trimmed = s$output$hist_faceted_trimmed
-      )
-      saved <- c(saved, .save_plots(plots, stem, output_dir, width, h, dpi))
-      tables <- list(summary_table = s$output$summary_table)
-      saved <- c(saved, .save_tables(tables, stem, output_dir))
-    } else if (type == "discrete_discrete_joint") {
-      tables <- list(
-        crosstab = s$output$crosstab,
-        crosstab_transposed = s$output$crosstab_transposed
-      )
-      saved <- c(saved, .save_tables(tables, stem, output_dir))
-    } else if (type == "spatial_summary") {
-      plots <- list(
-        map = s$output$map,
-        scatter = s$output$scatter
-      )
-      saved <- c(
-        saved,
-        .save_plots(plots, stem, output_dir, width, height, dpi)
-      )
-    } else {
-      warning(sprintf("Unknown `info$summary_type` '%s'; skipping.", type))
+      stem <- .sanitize_name(entry$info$file_save_path)
+
+      if (inherits(entry$output, "gg")) {
+        h <- max(height, entry$info$plot_height %||% height)
+        path <- file.path(output_dir, paste0(stem, "_", nm, ".png"))
+        ggplot2::ggsave(path, entry$output, width = width, height = h, dpi = dpi)
+        saved <- c(saved, path)
+      } else {
+        path <- file.path(output_dir, paste0(stem, "_", nm, ".md"))
+        writeLines(as.character(entry$output), path)
+        saved <- c(saved, path)
+      }
     }
   }
 
@@ -142,36 +104,6 @@ save_summaries <- function(
   x <- tolower(trimws(x))
   x <- gsub("[^[:alnum:]]+", "_", x)
   gsub("^_|_$", "", x)
-}
-
-# Save a named list of ggplot objects as PNGs; return paths written.
-.save_plots <- function(plots, stem, output_dir, width, height, dpi) {
-  saved <- character(0)
-  for (key in names(plots)) {
-    obj <- plots[[key]]
-    if (is.null(obj)) {
-      next
-    }
-    path <- file.path(output_dir, paste0(stem, "_", key, ".png"))
-    ggplot2::ggsave(path, obj, width = width, height = height, dpi = dpi)
-    saved <- c(saved, path)
-  }
-  saved
-}
-
-# Save a named list of data frame tables as .md files; return paths written.
-.save_tables <- function(tables, stem, output_dir) {
-  saved <- character(0)
-  for (key in names(tables)) {
-    obj <- tables[[key]]
-    if (is.null(obj)) {
-      next
-    }
-    path <- file.path(output_dir, paste0(stem, "_", key, ".md"))
-    writeLines(as.character(obj), path)
-    saved <- c(saved, path)
-  }
-  saved
 }
 
 # Minimal null-coalescing operator (avoids rlang dependency).

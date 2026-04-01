@@ -49,20 +49,22 @@ joint_discrete_discrete <- function(data, var1, var2) {
   x1[is.na(x1)] <- "NA"
   x2[is.na(x2)] <- "NA"
 
+  info <- list(
+    file_save_path = paste(var1, var2, sep = "_"),
+    summary_type   = "discrete_discrete_joint",
+    covariate      = var1,
+    outcome        = var2
+  )
   return(list(
-    output = list(
-      crosstab            = .make_crosstab(x1, x2, var1, var2),
-      crosstab_transposed = .make_crosstab(x2, x1, var2, var1)
+    crosstab = list(
+      output  = .make_crosstab(x1, x2, var1, var2),
+      exclude = NULL,
+      info    = info
     ),
-    excludes = list(
-      crosstab            = NULL,
-      crosstab_transposed = NULL
-    ),
-    info = list(
-      file_save_path = paste(var1, var2, sep = "_"),
-      summary_type   = "discrete_discrete_joint",
-      covariate      = var1,
-      outcome        = var2
+    crosstab_transposed = list(
+      output  = .make_crosstab(x2, x1, var2, var1),
+      exclude = NULL,
+      info    = info
     )
   ))
 }

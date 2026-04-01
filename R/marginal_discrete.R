@@ -78,21 +78,24 @@ marginal_discrete <- function(data, var_name) {
   # Collapse logic only considers non-NA categories; trigger when > 10 non-NA cats
   n_cats <- nrow(tbl_non_na)
 
+  info <- list(
+    file_save_path = var_name,
+    summary_type   = "discrete_marginal",
+    covariate      = var_name,
+    outcome        = NULL
+  )
+
   if (n_cats <= 10) {
     return(list(
-      output = list(
-        table           = md_table,
-        table_collapsed = NULL
+      table = list(
+        output  = md_table,
+        exclude = NULL,
+        info    = info
       ),
-      excludes = list(
-        table           = NULL,
-        table_collapsed = NULL
-      ),
-      info = list(
-        file_save_path = var_name,
-        summary_type   = "discrete_marginal",
-        covariate      = var_name,
-        outcome        = NULL
+      table_collapsed = list(
+        output  = NULL,
+        exclude = NULL,
+        info    = info
       )
     ))
   }
@@ -112,19 +115,15 @@ marginal_discrete <- function(data, var_name) {
 
   if (k == 0L) {
     return(list(
-      output = list(
-        table           = md_table,
-        table_collapsed = NULL
+      table = list(
+        output  = md_table,
+        exclude = NULL,
+        info    = info
       ),
-      excludes = list(
-        table           = NULL,
-        table_collapsed = NULL
-      ),
-      info = list(
-        file_save_path = var_name,
-        summary_type   = "discrete_marginal",
-        covariate      = var_name,
-        outcome        = NULL
+      table_collapsed = list(
+        output  = NULL,
+        exclude = NULL,
+        info    = info
       )
     ))
   }
@@ -145,19 +144,15 @@ marginal_discrete <- function(data, var_name) {
   md_table_collapsed <- .format_freq_table(tbl_collapsed, var_name)
 
   return(list(
-    output = list(
-      table           = md_table,
-      table_collapsed = md_table_collapsed
+    table = list(
+      output  = md_table,
+      exclude = NULL,
+      info    = info
     ),
-    excludes = list(
-      table           = NULL,
-      table_collapsed = NULL
-    ),
-    info = list(
-      file_save_path = var_name,
-      summary_type   = "discrete_marginal",
-      covariate      = var_name,
-      outcome        = NULL
+    table_collapsed = list(
+      output  = md_table_collapsed,
+      exclude = NULL,
+      info    = info
     )
   ))
 }

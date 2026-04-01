@@ -296,23 +296,28 @@ joint_continuous_discrete <- function(
     }
   }
 
+  info <- list(
+    file_save_path = paste(cont_var, disc_var, sep = "_"),
+    summary_type   = "continuous_discrete_joint",
+    covariate      = disc_var,
+    outcome        = cont_var,
+    plot_height    = plot_height
+  )
   return(list(
-    output = list(
-      hist_faceted = hist_faceted,
-      hist_faceted_trimmed = hist_faceted_trimmed,
-      summary_table = summary_table
+    hist_faceted = list(
+      output  = hist_faceted,
+      exclude = NULL,
+      info    = info
     ),
-    excludes = list(
-      hist_faceted = NULL,
-      hist_faceted_trimmed = hist_faceted_trimmed_excl,
-      summary_table = NULL
+    hist_faceted_trimmed = list(
+      output  = hist_faceted_trimmed,
+      exclude = hist_faceted_trimmed_excl,
+      info    = info
     ),
-    info = list(
-      file_save_path = paste(cont_var, disc_var, sep = "_"),
-      summary_type   = "continuous_discrete_joint",
-      covariate      = cont_var,
-      outcome        = disc_var,
-      plot_height    = plot_height
+    summary_table = list(
+      output  = summary_table,
+      exclude = NULL,
+      info    = info
     )
   ))
 }
