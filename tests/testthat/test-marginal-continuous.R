@@ -1,42 +1,43 @@
-test_that("marginal_continuous returns output/excludes/info structure", {
+test_that("marginal_continuous returns per-output structure", {
   set.seed(1)
   df <- data.frame(x = rnorm(200))
   out <- marginal_continuous(df, "x")
   expect_type(out, "list")
-  expect_named(out, c("output", "excludes", "info"))
-  expect_named(out$output,   c("hist", "hist_trimmed", "hist_log"))
-  expect_named(out$excludes, c("hist", "hist_trimmed", "hist_log"))
-  expect_s3_class(out$output$hist,         "ggplot")
-  expect_s3_class(out$output$hist_trimmed, "ggplot")
-  expect_s3_class(out$output$hist_log,     "ggplot")
+  expect_named(out, c("hist", "hist_trimmed", "hist_log"))
+  expect_named(out$hist,         c("output", "exclude", "info"))
+  expect_named(out$hist_trimmed, c("output", "exclude", "info"))
+  expect_named(out$hist_log,     c("output", "exclude", "info"))
+  expect_s3_class(out$hist$output,         "ggplot")
+  expect_s3_class(out$hist_trimmed$output, "ggplot")
+  expect_s3_class(out$hist_log$output,     "ggplot")
 })
 
 test_that("trim = NULL omits hist_trimmed", {
   df <- data.frame(x = 1:100)
   out <- marginal_continuous(df, "x", trim = NULL)
-  expect_null(out$output$hist_trimmed)
-  expect_null(out$excludes$hist_trimmed)
+  expect_null(out$hist_trimmed$output)
+  expect_null(out$hist_trimmed$exclude)
 })
 
 test_that("trim_count(10) excludes 10 smallest and 10 largest", {
   df <- data.frame(x = 1:100)
   out <- marginal_continuous(df, "x", trim = trim_count(10))
-  trimmed_data <- out$output$hist_trimmed$data$x
+  trimmed_data <- out$hist_trimmed$output$data$x
   expect_true(all(trimmed_data >= 11))
   expect_true(all(trimmed_data <= 90))
 })
 
-test_that("excludes$hist_trimmed contains the trimmed values (trim_count)", {
+test_that("exclude contains the trimmed values (trim_count)", {
   df <- data.frame(x = 1:100)
   out <- marginal_continuous(df, "x", trim = trim_count(10))
-  expect_length(out$excludes$hist_trimmed, 20)
-  expect_true(all(sort(out$excludes$hist_trimmed) == c(1:10, 91:100)))
+  expect_length(out$hist_trimmed$exclude, 20)
+  expect_true(all(sort(out$hist_trimmed$exclude) == c(1:10, 91:100)))
 })
 
 test_that("hist_trimmed caption reports count trimmed and kept", {
   df <- data.frame(x = 1:100)
   out <- marginal_continuous(df, "x", trim = trim_count(10))
-  caption <- out$output$hist_trimmed$labels$caption
+  caption <- out$hist_trimmed$output$labels$caption
   expect_match(caption, "20 observation")
   expect_match(caption, "80 kept")
 })
@@ -44,11 +45,11 @@ test_that("hist_trimmed caption reports count trimmed and kept", {
 test_that("trim_quantile trims by quantile", {
   df <- data.frame(x = 1:200)
   out <- marginal_continuous(df, "x", trim = trim_quantile(0.05))
-  expect_s3_class(out$output$hist_trimmed, "ggplot")
-  expect_false(is.null(out$excludes$hist_trimmed))
+  expect_s3_class(out$hist_trimmed$output, "ggplot")
+  expect_false(is.null(out$hist_trimmed$exclude))
   # Boundary values at positions k and n-k+1 are kept; k = floor(200*0.05) = 10
   # so 9 trimmed from each tail = 18 total
-  expect_length(out$excludes$hist_trimmed, 18)
+  expect_length(out$hist_trimmed$exclude, 18)
 })
 
 test_that("hist_trimmed is NULL with a message when trimming removes all", {
@@ -58,21 +59,21 @@ test_that("hist_trimmed is NULL with a message when trimming removes all", {
                                trim = trim_count(10)),
     "trimming removed all"
   )
-  expect_null(out$output$hist_trimmed)
-  expect_null(out$excludes$hist_trimmed)
+  expect_null(out$hist_trimmed$output)
+  expect_null(out$hist_trimmed$exclude)
 })
 
 test_that("NA count and percentage appear in caption on hist and hist_trimmed", {
   df <- data.frame(x = c(1:100, NA, NA, NA))
   out <- marginal_continuous(df, "x")
-  expect_match(out$output$hist$labels$caption,         "Missing: 3")
-  expect_match(out$output$hist$labels$caption,         "%")
-  expect_match(out$output$hist_trimmed$labels$caption, "Missing: 3")
+  expect_match(out$hist$output$labels$caption,         "Missing: 3")
+  expect_match(out$hist$output$labels$caption,         "%")
+  expect_match(out$hist_trimmed$output$labels$caption, "Missing: 3")
 })
 
 test_that("caption shows 0 missing when no NAs", {
   out <- marginal_continuous(data.frame(x = 1:100), "x")
-  expect_match(out$output$hist$labels$caption, "Missing: 0")
+  expect_match(out$hist$output$labels$caption, "Missing: 0")
 })
 
 test_that("marginal_continuous errors on non-numeric, non-parseable input", {
@@ -82,14 +83,14 @@ test_that("marginal_continuous errors on non-numeric, non-parseable input", {
 test_that("var_name is used as x-axis label", {
   df <- data.frame(my_score = rnorm(50))
   out <- marginal_continuous(df, "my_score")
-  expect_equal(out$output$hist$labels$x, "my_score")
+  expect_equal(out$hist$output$labels$x, "my_score")
 })
 
 test_that("hist_log uses log10 scale", {
   df <- data.frame(x = exp(rnorm(100)))
   out <- marginal_continuous(df, "x")
-  expect_s3_class(out$output$hist_log, "ggplot")
-  scale_names <- sapply(out$output$hist_log$scales$scales, function(s) s$trans$name)
+  expect_s3_class(out$hist_log$output, "ggplot")
+  scale_names <- sapply(out$hist_log$output$scales$scales, function(s) s$trans$name)
   expect_true(any(grepl("log", scale_names, ignore.case = TRUE)))
 })
 
@@ -99,25 +100,25 @@ test_that("hist_log is NULL with message when all values are non-positive", {
     out <- marginal_continuous(df, "x"),
     "hist_log"
   )
-  expect_null(out$output$hist_log)
+  expect_null(out$hist_log$output)
 })
 
 test_that("hist_log caption notes excluded non-positive values", {
   df <- data.frame(x = c(-1, 0, 1:98))
   out <- marginal_continuous(df, "x")
-  expect_match(out$output$hist_log$labels$caption, "non-positive")
+  expect_match(out$hist_log$output$labels$caption, "non-positive")
 })
 
 test_that("info$summary_type is continuous_marginal", {
   out <- marginal_continuous(data.frame(x = 1:50), "x")
-  expect_equal(out$info$summary_type, "continuous_marginal")
-  expect_equal(out$info$covariate, "x")
+  expect_equal(out$hist$info$summary_type, "continuous_marginal")
+  expect_equal(out$hist$info$covariate, "x")
 })
 
-test_that("excludes$hist and excludes$hist_log are always NULL", {
+test_that("hist and hist_log exclude are always NULL", {
   out <- marginal_continuous(data.frame(x = 1:100), "x")
-  expect_null(out$excludes$hist)
-  expect_null(out$excludes$hist_log)
+  expect_null(out$hist$exclude)
+  expect_null(out$hist_log$exclude)
 })
 
 test_that("trim_count functional returns a function", {

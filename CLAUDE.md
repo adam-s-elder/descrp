@@ -27,23 +27,31 @@ devtools::check()
 
 ## Architecture
 
-All exported functions follow the same pattern: accept a `data` frame plus variable name(s), and return a named list with this structure:
+All exported functions follow the same pattern: accept a `data` frame plus variable name(s), and return a named list where each top-level key is an output name and each value is a self-contained entry:
 
 ```r
 list(
-  outputs    = list(<named plots/tables>),
-  exclusions = list(<same names as outputs, NULL or excluded data for trimmed outputs>),
-  .var_name     = "...",   # used by save_summaries() for file names
-  .summary_type = "..."    # dispatched on by save_summaries()
-  # .plot_height only present for continuous_discrete_joint
+  <output_name> = list(
+    output  = <plot or table>,   # ggplot object, knitr_kable, or data frame
+    exclude = <NULL or excluded data>,
+    info    = list(
+      file_save_path = "...",    # used by save_summaries() for file names
+      summary_type   = "...",    # identifies the function that produced this
+      covariate      = "...",
+      outcome        = "...",    # NULL for marginal summaries
+      plot_height    = <numeric> # only present for continuous_discrete_joint plots
+    )
+  ),
+  <output_name2> = list(...),
+  ...
 )
 ```
 
-`exclusions` mirrors the names in `outputs`. For non-trimmed outputs the value is `NULL`; for trimmed outputs it contains the excluded observations (a numeric vector for `hist_trimmed`, a data frame for `scatter_trimmed`).
+`exclude` is `NULL` for non-trimmed outputs; for trimmed outputs it contains the excluded observations (a numeric vector for `hist_trimmed`, a data frame for `scatter_trimmed`).
 
-### Exported functions and their `.summary_type`
+### Exported functions and their `summary_type`
 
-| Function | `.summary_type` | `outputs` keys |
+| Function | `summary_type` | output keys |
 |---|---|---|
 | `marginal_continuous(data, var_name, trim)` | `"continuous_marginal"` | `hist`, `hist_trimmed`, `hist_log` |
 | `marginal_discrete(data, var_name)` | `"discrete_marginal"` | `table`, `table_collapsed` |
@@ -56,7 +64,7 @@ list(
 
 The `trim` argument accepts a trimming function or `NULL`. If `NULL`, no trimmed output is produced.
 
-A trimming function takes a numeric vector and returns an integer vector of the same length: `0` = keep, `1` = trim. The trimmed summary is built from the kept subset; the excluded values are stored in `exclusions`.
+A trimming function takes a numeric vector and returns an integer vector of the same length: `0` = keep, `1` = trim. The trimmed summary is built from the kept subset; the excluded values are stored in `exclude`.
 
 Two trimming functionals are exported (like ggplot2 scale functions — they return a function):
 
@@ -65,20 +73,20 @@ Two trimming functionals are exported (like ggplot2 scale functions — they ret
 
 ### `save_summaries()`
 
-Accepts a single summary list or a list of summary lists. Dispatches on `.summary_type`, accesses `s$outputs$<key>` to save:
+Accepts a single summary list or a list of summary lists. Iterates over each entry, dispatching on output class:
 - ggplot2 objects → PNG via `ggplot2::ggsave()`
-- kable objects → `.md` files via `writeLines()`
+- all other outputs → `.md` files via `writeLines(as.character(...))`
 
-File names are `<sanitized_var_name>_<key>.png` or `<sanitized_var_name>_<key>.md`.
+File names are `<sanitized_var_name>_<output_key>.png` or `<sanitized_var_name>_<output_key>.md`.
 
 ### Key behaviors to be aware of
 
 - `marginal_continuous` accepts numeric columns or character columns parseable as numbers or dates (via `lubridate`). Date columns skip `hist_log`.
 - `marginal_discrete` collapses categories individually below 5% into a `"< 5%"` row when there are more than 10 non-NA categories.
-- `joint_continuous_discrete` returns `hist_faceted = NULL` when the discrete variable has more than 10 levels. It also returns `.plot_height` which `save_summaries()` uses to override the default export height.
+- `joint_continuous_discrete` returns `hist_faceted = NULL` when the discrete variable has more than 10 levels. It stores `plot_height` in each entry's `info`; `save_summaries()` uses this to override the default export height.
 - `spatial_summary` uses `dplyr::inner_join()` so only areas present in the data appear in the map (no grey "no data" areas). The `scatter` output shows value vs land area (`ALAND`/`ALAND20`) filtered to Washington state only (county STATEFP `"53"` or ZCTA spatial filter via `sf::st_filter`). County maps include `geom_sf_text` labels with values rounded to 3 significant figures.
 - `spatial_summary` requires `sf` and `tigris` (in `Suggests`); shapefiles are cached via `options(tigris_use_cache = TRUE)`.
-- Internal helpers are prefixed with `.` (e.g., `.format_freq_table`, `.make_crosstab`, `.sanitize_name`, `.save_plots`, `.save_tables`).
+- Internal helpers are prefixed with `.` (e.g., `.format_freq_table`, `.make_crosstab`, `.sanitize_name`).
 
 ## Dependencies
 
