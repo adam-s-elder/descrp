@@ -234,7 +234,8 @@ joint_continuous_discrete <- function(
         ncol = ncols,
         scales = "free_y"
       ) +
-      ggplot2::labs(x = cont_var, y = "Count", caption = caption_text)
+      ggplot2::labs(x = cont_var, y = "Count", caption = caption_text) +
+      cowplot::theme_minimal_grid()
     p
   }
 

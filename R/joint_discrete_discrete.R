@@ -65,8 +65,60 @@ joint_discrete_discrete <- function(data, var1, var2) {
       output  = .make_crosstab(x2, x1, var2, var1),
       exclude = NULL,
       info    = info
+    ),
+    bar_stacked = list(
+      output  = .make_stacked_bar(x1, x2, var1, var2),
+      exclude = NULL,
+      info    = info
+    ),
+    bar_stacked_transposed = list(
+      output  = .make_stacked_bar(x2, x1, var2, var1),
+      exclude = NULL,
+      info    = info
     )
   ))
+}
+
+# Build a stacked bar chart: x = row_vals levels, fill = col_vals levels.
+# Fill levels are sorted by overall frequency and then reversed so the most
+# frequent category sits at the top of each bar. Each segment is labelled with
+# its count and row percentage.
+.make_stacked_bar <- function(row_vals, col_vals, row_var, col_var) {
+  df <- data.frame(
+    row_val = row_vals,
+    col_val = col_vals,
+    stringsAsFactors = FALSE
+  )
+
+  counts <- df |>
+    dplyr::count(row_val, col_val) |>
+    dplyr::group_by(row_val) |>
+    dplyr::mutate(
+      total = sum(n),
+      pct   = n / total * 100
+    ) |>
+    dplyr::ungroup()
+
+  # Sort fill levels by overall frequency; reverse so the most frequent
+  # category is rendered on top of each bar (flip from default bottom-first).
+  fill_levels <- counts |>
+    dplyr::count(col_val, wt = n, sort = TRUE) |>
+    dplyr::pull(col_val)
+  counts$col_val <- factor(counts$col_val, levels = rev(fill_levels))
+
+  ggplot2::ggplot(counts, ggplot2::aes(x = row_val, y = n, fill = col_val)) +
+    ggplot2::geom_bar(stat = "identity") +
+    ggplot2::geom_text(
+      ggplot2::aes(
+        label = paste0(scales::comma(n), "\n(", round(pct, 1), "%)"),
+        group = col_val
+      ),
+      position = ggplot2::position_stack(vjust = 0.5),
+      size  = 2.8,
+      colour = "white"
+    ) +
+    ggplot2::labs(x = row_var, y = "Count", fill = col_var) +
+    cowplot::theme_minimal_grid()
 }
 
 # Build a cross-tab data frame: rows = row_vals levels, cols = col_vals levels.

@@ -82,7 +82,8 @@ joint_continuous_continuous <- function(data, var1, var2,
   scatter <- ggplot2::ggplot(df, ggplot2::aes(x = x, y = y)) +
     ggplot2::geom_point(alpha = 0.5) +
     ggplot2::geom_smooth(method = "lm", formula = y ~ x) +
-    ggplot2::labs(x = var1, y = var2, caption = na_text)
+    ggplot2::labs(x = var1, y = var2, caption = na_text) +
+    cowplot::theme_minimal_grid()
 
   # --- Trimmed scatter -----------------------------------------------------
   scatter_trimmed      <- NULL
@@ -110,7 +111,8 @@ joint_continuous_continuous <- function(data, var1, var2,
       scatter_trimmed <- ggplot2::ggplot(df_trimmed, ggplot2::aes(x = x, y = y)) +
         ggplot2::geom_point(alpha = 0.5) +
         ggplot2::geom_smooth(method = "lm", formula = y ~ x) +
-        ggplot2::labs(x = var1, y = var2, caption = caption_trimmed)
+        ggplot2::labs(x = var1, y = var2, caption = caption_trimmed) +
+        cowplot::theme_minimal_grid()
     }
   }
 

@@ -196,7 +196,7 @@ spatial_summary <- function(
 
   excluded_suffix <- if (n_excluded_areas > 0L) {
     sprintf(
-      " %s zipcode(s) with fewer than 10 observations excluded.",
+      " %s zipcode(s) with fewer than 10 deaths excluded.",
       format(n_excluded_areas, big.mark = ",")
     )
   } else {
@@ -205,17 +205,17 @@ spatial_summary <- function(
 
   if (is.null(summary_var)) {
     caption <- sprintf(
-      "%s observations across %s %s(s).%s",
+      "%s deaths across %s %s(s).%s",
       format(n_total, big.mark = ","),
       format(n_areas, big.mark = ","),
       spatial_type,
       excluded_suffix
     )
-    title <- sprintf("Count of observations per %s", spatial_type)
+    title <- sprintf("Count of deaths per %s", spatial_type)
   } else {
     n_missing_sv <- sum(is.na(data[[summary_var]]))
     caption <- sprintf(
-      "%s observations (%s missing %s); %s %s(s) with data.%s",
+      "%s deaths (%s missing %s); %s %s(s) with data.%s",
       format(n_total, big.mark = ","),
       format(n_missing_sv, big.mark = ","),
       summary_var,
@@ -230,9 +230,11 @@ spatial_summary <- function(
 
   gg_map <- ggplot2::ggplot(shp_joined) +
     ggplot2::geom_sf(ggplot2::aes(fill = value), colour = NA) +
-    ggplot2::scale_fill_continuous(
-      palette = viridis::plasma(100, begin = 0, end = 0.75),
-      name = fill_label
+    ggplot2::scale_fill_viridis_c(
+      option = "plasma",
+      begin  = 0,
+      end    = 0.75,
+      name   = fill_label
     ) +
     ggplot2::labs(title = title, caption = caption) +
     ggplot2::theme_void() +
@@ -279,7 +281,7 @@ spatial_summary <- function(
       dplyr::transmute(
         n = n,
         value = value,
-        label = as.character(.data[[scatter_label_col]])
+        label = tools::toTitleCase(as.character(.data[[scatter_label_col]]))
       ) |>
       dplyr::filter(!is.na(n))
 
@@ -302,18 +304,18 @@ spatial_summary <- function(
       ggplot2::geom_text(vjust = -0.5, size = 2.5, check_overlap = TRUE) +
       ggplot2::scale_x_log10(labels = scales::comma) +
       ggplot2::labs(
-        x = "Number of observations",
+        x = "Number of deaths",
         y = scatter_y_label,
         title = paste0(
           scatter_y_label,
-          " vs observation count \u2014 Washington state"
+          " vs death count \u2014 Washington state"
         ),
         caption = sprintf(
           "Washington state only. %s areas shown.",
           nrow(scatter_df)
         )
       ) +
-      ggplot2::theme_bw() +
+      cowplot::theme_minimal_grid() +
       ggplot2::theme(legend.position = "bottom")
   }
 

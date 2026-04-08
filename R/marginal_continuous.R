@@ -131,7 +131,8 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
 
   hist_plot <- ggplot2::ggplot(df, ggplot2::aes(x = x)) +
     ggplot2::geom_histogram() +
-    ggplot2::labs(x = var_name, y = "Count", caption = na_text)
+    ggplot2::labs(x = var_name, y = "Count", caption = na_text) +
+    cowplot::theme_minimal_grid()
 
   if (is_date) {
     hist_plot <- hist_plot + ggplot2::scale_x_date()
@@ -166,7 +167,8 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
         ggplot2::aes(x = x)
       ) +
         ggplot2::geom_histogram() +
-        ggplot2::labs(x = var_name, y = "Count", caption = caption_text)
+        ggplot2::labs(x = var_name, y = "Count", caption = caption_text) +
+        cowplot::theme_minimal_grid()
 
       if (is_date) {
         hist_trimmed <- hist_trimmed + ggplot2::scale_x_date()
@@ -197,9 +199,10 @@ marginal_continuous <- function(data, var_name, trim = trim_count()) {
         )
       }
       hist_log <- ggplot2::ggplot(data.frame(x = x_pos), ggplot2::aes(x = x)) +
-        ggplot2::geom_histogram() +
+        ggplot2::geom_point(stat = "bin") +
         ggplot2::scale_x_log10(labels = scales::comma) +
-        ggplot2::labs(x = var_name, y = "Count", caption = log_caption)
+        ggplot2::labs(x = var_name, y = "Count", caption = log_caption) +
+        cowplot::theme_minimal_grid()
     }
   }
 
